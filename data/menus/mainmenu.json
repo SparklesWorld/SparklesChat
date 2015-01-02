@@ -1,0 +1,36 @@
+{
+  "SparklesChat": {
+    "Connect": "client networklist",
+    "Quit": "client quit"
+  },
+  "Settings": {
+    "Preferences": "client preferences",
+    "Auto replace": "client autoreplace",
+    "Keyboard shortcuts": "client keyshortcuts",
+    "User commands": "client aliases"
+  },
+  "Server": {
+    "Join channel": "client joinchannel %s",
+    "Channel list": "client channellist %s",
+    "Reconnect": "client reconnect %s",
+    "Disconnect": "client disconnect %s",
+    "Close": "client close %s"
+  },
+  "Window": {
+    "Channel info/settings": "channelinfo",
+    "Character map": "charactermap",
+    "Notify list": "notify list",
+    "Ignore list": "ignore list",
+    "<friends>Friends list": "friend list",
+    "<fchat>Bookmark list": "bookmark list",
+    "Manage addons": "client addonslist"
+  },
+  "Extras": {
+    "Image converter": "imageconvert"
+  },
+  "Help": {
+    "Open website": "client url http://t.novasquirrel.com/sparkleschat/",
+    "Check for updates": "updatecheck",
+    "About": "client about"
+  }
+}

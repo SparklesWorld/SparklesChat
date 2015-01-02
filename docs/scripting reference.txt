@@ -1,0 +1,249 @@
+api.Num(String, Base)
+Returns a string converted to a number, in whatever base you want. Works like C's strtol().
+
+api.Chr(Code)
+Returns a string containing a single byte, indicated by Code.
+
+api.WildMatch(String, Wildcard)
+Returns true if String matches Wildcard, case insensitive. ? and * are usable.
+
+api.SetClipboard(String)
+Sets the clipboard to String.
+
+api.GetClipboard()
+Returns the text on the clipboard.
+
+api.AddTimer(Time, Function, Extra)
+Adds a timer to be run after Time milliseconds, calling Function with Extra as the parameter.
+Returns an ID that can be passed to api.DelTimer() to force the timer to cancel.
+If Function returns an integer, it will run again after that many milliseconds,
+If it returns anything else, the timer will be stopped.
+
+api.AddEventHook(EventName, Function, Priority, Flags, Need0, Need1)
+Adds a new event hook for type EventName that will run a function at priority Priority.
+Flags is probably unused.
+Need0 and Need1 are bits in the event that need to both be 0 or 1 respectively for the hook to trigger.
+Returns a number that can be passed to api.DelEventHook(EventName, HookId) to remove the hook.
+
+api.AddCommandHook(CommandName, Function, Priority, Help, Syntax)
+Adds a new command named CommandName that runs a function at priority Priority.
+Help is the text for /help Command, Syntax is the syntax for commands. Both can be null.
+Returns a number that can be passed to api.DelCommandHook(CommandName, HookId) to remove the hook.
+OR the priority with PROTOCOL_CMD if you want the command to work only on tabs the script created.
+
+api.DecodeJSON(String)
+Converts a JSON string to a Squirrel table, array, integer, boolean or string.
+
+api.ToJSON(Table)
+Converts a value into a JSON string.
+
+api.GetInfo(Info)
+Returns a piece of info:
+Context: Current focused context.
+ClientName: Client's name.
+ClientVersion: Client's version.
+PrefPath: Path to the preferences directory.
+
+api.NativeCommand(CommandName, Args, Context)
+Do a native client command CommandName with Args (a string) at context Context.
+
+api.Event(EventName, Args, Context)
+Triggers event of type EventName with Args (a table or string) at context Context.
+
+api.Command(CommandName, Args, Context)
+Triggers command of type CommandName with Args (a string) at context Context.
+
+api.LoadTextFile(Name)
+api.SaveTextFile(Name, Contents)
+api.TextFileExists(Name)
+Load, save or check if a text file exists. No path is given, nor is a .txt given in the name.
+
+api.LoadTable(Name)
+api.TryLoadTable(Name)
+Like api.LoadTextFile but returns a table.
+api.TryLoadTable() will return null if it can't while api.LoadTable() will return {}.
+
+api.SaveTable(Name, Contents)
+Like api.SaveTextFile() but saves a table
+
+api.CmdParamSplit(Args)
+api.TextParamSplit(Args)
+Split a command's arguments into multiple words.
+For the input: "aaa bbb ccc" it will return this array:
+[ ["aaa", "bbb", "ccc"], ["aaa bbb ccc", "bbb ccc", "ccc"] ]
+CmdParamSplit will treat "multiple words in quotes" as a single parameter.
+
+api.TabCreate(Name, Parent, Flags)
+Makes a new tab named Name in Parent with flags set to Flags.
+Parent can be empty if you're making a network.
+
+api.TabExists(Name)
+Returns true if a context by the name of Name exists.
+
+api.TabRemove(Name)
+Removes a tab named Name.
+
+api.TabSetFlags(Name, Flags)
+Sets tab Name's flags to Flags.
+
+api.TabGetFlags(Name)
+Returns tab Name's flags.
+
+api.TabGetInfo(Name, Info)
+Can return different information about a tab:
+List: Returns a list of networks if Name is "". If it's a network, it lists the tabs inside it. If it's a channel, it lists users.
+Channel: Tab's name.
+Icon: Tab's icon.
+Server: Name of the server the tab is on, regardless of if it's a server or channel tab.
+Nick: User's nick on the given tab.
+Protocol: Name of the protocol used for the given tab.
+Ticket: Ticket associated with a server.
+Socket: A socket number for the server.
+
+api.TabSetInfo(Name, Info, NewValue)
+Can set different values for a tab:
+Nick: User's nick on the given tab.
+Ticket: Ticket associated with a server.
+Socket: A socket number for the server.
+Channel: Rename the tab. Breaks references to that context.
+
+api.TabSetColor(Context, Color)
+Sets a tab color to Color.
+Will only go from a lower importance color to a higher importance color, in this order (least to greatest):
+COLOR_NORM, COLOR_DATA, COLOR_TALK, COLOR_NAME
+This is so that a hilight happens, and someone talks or an event happens the hilight sticks.
+
+api.AddMessage(Message, Context, Time, Flags)
+Creates a new message in Context with the contents of Message and time and message flags set to Time and Flags.
+
+api.TempMessage(Message, Context)
+Makes a message at Context which won't be logged or stick around long.
+
+api.Time()
+Like C's time(NULL).
+
+api.GetTicks()
+Returns the number of milliseconds since the client started.
+
+api.ConvertBBCode(Message)
+Converts F-Chat style BBCode to IRC format and returns it.
+
+api.FindAddon(AddonName, Required)
+Looks for AddonName being loaded, and returns true or false if it's found or not.
+If Required is true and AddonName is the name of the addon's script file, it will load it.
+
+api.LoadAddon(AddonName)
+Loads an addon named AddonName.
+
+api.ReloadAddon(AddonName)
+Unloads an addon named AddonName and reloads it.
+
+api.UnloadAddon(AddonName)
+Unloads an addon named AddonName.
+
+api.CallAddon(AddonName, Function, ...)
+Not implemented yet.
+
+api.EvalAddon(AddonName, Code)
+Asks an addon named AddonName to run Code.
+api.EvalAddonJSON(AddonName, Code) will return the output as a string.
+
+api.GetConfigInt(Default, Path)
+api.GetConfigStr(Default, Path)
+api.GetConfigNames(Path)
+Returns an integer, string or the list of items inside something in the config.
+Paths are specified like Item1/Item2/Item3, and multiple paths can be specified.
+Path1\\Path2\\Path3 specifies multiple paths to try.
+
+api.RunString(Code)
+Run a string as code.
+
+api.ForceMinStrLen(String, Length)
+Adds spaces until the string is at least Length characters long.
+
+api.Button(Text, Action)
+Returns the text for button that does command Action upon being clicked.
+
+api.CurlGet(Function, Extra, URL)
+api.CurlPost(Function, Extra, URL, Form)
+Uses libcurl to transfer a file.
+Function is called with (Code, Data, Extra) where Code is documented at http://curl.haxx.se/libcurl/c/libcurl-errors.html
+and if there is an error then Data contains the error rather than the data transferred. Extra is just passed along.
+
+api.URLEncode(Text)
+Encodes text to be suitable for putting in a URL.
+
+api.MakeForms(Table)
+Takes a table of different form parts, and makes them into a form suitable for api.CurlPost
+
+api.NetOpen(Function, Host, Type)
+api.NetSend(Socket, Text)
+api.NetClose(Socket, Reopen)
+Open a socket, send text on a socket or close a socket. NetOpen returns and integer that can be passed to NetSend and NetClose.
+Host is a URL in the format host:port
+Function is called with (Socket, Event, Text) when an event happens on the socket.
+Type is a string containing the following options separated by white space:
+"text"      - plain text handling
+"nosplit"   - do not separate by line
+"websocket" - websockets
+"ssl"       - use SSL
+
+---Enums---
+enum Priority {
+  LOWEST,
+  LOWER,
+  LOW,
+  NORMAL,
+  HIGH,
+  HIGHER,
+  HIGHEST
+};
+
+enum EventFlags {
+  EF_ALREADY_HANDLED = 1,
+  EF_DONT_SHOW = 2, // not implemented yet
+};
+
+enum EventReturn {
+  NORMAL,    // don't affect the event
+  HANDLED,   // message is already handled
+  DELETE,    // delete event, stop processing it entirely
+  BADSYNTAX, // syntax for command is bad
+// you can also return the info string
+};
+
+enum TabFlags {
+  COLOR_NORM = 0, /* normal channel color */
+  COLOR_TALK = 1, /* someone talked */
+  COLOR_DATA = 2, /* other data, not talking*/
+  COLOR_NAME = 3, /* name said */
+  COLOR_MASK = 3, /* mask to only get colors */
+  CHANNEL = 4,    /* is a channel */
+  QUERY = 8,      /* is a query */
+  SERVER = 16,    /* is a server */
+  NOTINCHAN = 32, /* user isn't in the channel, whether through being kicked or having parted */
+  NOLOGGING = 64, /* don't log this tab */
+  HIDDEN = 128,   /* hidden, detached tab */
+}
+
+enum MessageFlags {
+  CLASS0 = 0,      // default
+  CLASS1 = 1,      // people talking
+  CLASS2 = 2,      // leaving/entering
+  CLASS3 = 3,      // misc non-chat messages like modes
+  CLASS4 = 4,      // ads
+  CLASS5 = 5,
+  CLASS6 = 6,
+  CLASS7 = 7,
+  CLASSMASK = 7,
+  HIDDEN = 8,      // message is hidden for any reason
+  IGNORED = 16,    // message source is ignored
+  SCROLLBACK = 32, // message loaded from scrollback
+  TEMP = 64        // temp alert message, not logged, cleared away easily
+}
+
+enum SockEvents {
+  CANT_CONNECT,         // can't connect to the socket
+  CONNECTED,            // connected to the socket successfully
+  NEW_DATA,             // new data from the socket
+};

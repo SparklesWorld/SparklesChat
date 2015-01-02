@@ -1,0 +1,204 @@
+---- Plugin interface ----
+When loading the plugin, the client will look for these functions, in order, and call the first it finds
+1: int Sparkles_InitPlugin(xchat_plugin *plugin_handle, sparkles_plugin *sparkles_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char **plugin_author, char *arg)
+2: int hexchat_plugin_init(xchat_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
+3: int xchat_plugin_init(xchat_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
+
+In the init function:
+Store plugin_handle (and sparkles_handle if given) to pointers, named ph and sph respectively.
+Set *plugin_name to a string containing the plugin's name, *plugin_desc to a string containing a description, *plugin_version to a string containing a version number and (if given) *plugin_author to a string containing the plugin author's name.
+
+The corresponding function for the init function will be called when unloading the plugin.
+int Sparkles_DeInitPlugin()
+int hexchat_plugin_deinit()
+int xchat_plugin_deinit()
+
+Plugins can't implement protocols, but libraries can help in a protocol's implementation.
+
+---- Library interface ----
+In Squirrel, api.RequireCLibrary(LibraryFile, InstallHere)
+Will open LibraryFile (and append a .so or .dll to the name as needed) and create a table named InstallHere to install functions in.
+
+Upon being loaded, Sparkles_InitPlugin() will be called in the plugin as normal.
+
+int Spark_InstallLibrary(HSQUIRRELVM v)
+Called when a script wants to install a library's API functions.
+Use Spark_RegisterFunc() and see below in the plugin interface section.
+The table is already open by the time this function is called.
+
+---- Plugin API functions ----
+These are provided both to libraries and plugins.
+
+void *Spark_FindSymbol(const char *SymbolName);
+Looks for a function or pointer not listed here and returns it, if supported.
+
+void  Spark_RegisterFunc(HSQUIRRELVM v, SQFUNCTION f, const char *fname, int nparamscheck, const char *typemask);
+Registers a function in a Squirrel VM. To be used with the library interface.
+Look for sq_setparamscheck in http://www.squirrel-lang.org/doc/squirrel3.html for information on the parameter checking parameters.
+
+void  Spark_strlcpy(char *Destination, const char *Source, int MaxLength);
+Copies a string safely, without any possibility of overflow. MaxLength should be sizeof(Destination).
+
+int   Spark_memcasecmp(const char *Text1, const char *Text2, int Length);
+Same as memcmp but case insensitive.
+
+int   Spark_UnicodeLen(const char *Text, const char *EndPoint);
+Number of characters in a string, ignoring Unicode continuation bytes. EndPoint can be NULL to check until the end.
+
+char *Spark_UnicodeForward(char *Text, int CharsAhead);
+Move forward CharsAhead characters forward in Text and return a new pointer, or NULL if it went off the end.
+
+char *Spark_UnicodeBackward(char *Text, int CharsAhead, char *First);
+Move forward CharsAhead characters backward Text and return a new pointer, or NULL if it went off the end.
+
+char *Spark_StripIRCText(char *Out, const char *Text, int Flags);
+Return a pointer stripped of IRC formatting. Flags is unused. Returns Out.
+
+int   Spark_VisibleStrLen(const char *Text, int Flags);
+Equivalent of Spark_UnicodeLen() on the results of Spark_StripIRCText().
+
+void  Spark_SaveTextFile(const char *Name, const char *Contents);
+Like api.SaveTextFile().
+
+char *Spark_LoadTextFile(const char *Name);
+Like api.LoadTextFile. Returns a pointer and you must free() it when you're done with it.
+
+int   Spark_AddMessage(xchat_plugin *ph, const char *Message, time_t Time, int Flags);
+int   Spark_AddMessageF(xchat_plugin *ph, const char *Message, time_t Time, int Flags, ...);
+int   Spark_TempMessage(xchat_plugin *ph, const char *Message);
+int   Spark_TempMessageF(xchat_plugin *ph, const char *Message, ...);
+Like api.AddMessage(). The F versions use sprintf() and the Temp version is like api.TempMessage().
+
+int   Spark_WildMatch(const char *TestMe, const char *Wild);
+Like api.WildMatch().
+
+int   Spark_XChatTokenize(const char *Input, char *WordBuff, const char **Word, const char **WordEol, int WordSize);
+Splits Input into tokens and stores a split version in WordBuff. Word and WordEol will be set to an array containing the different tokens in WordBuff. WordSize is the max number of indexes allowed. Pass a negative WordSize to ask for a better match with what XChat does.
+
+const char *Spark_FilenameOnly(const char *Path);
+Returns a string containing only the filename in the path on the end, and not any directories.
+
+xchat_hook *Spark_AddCommandHook(xchat_plugin *ph, const char *CommandName, int (*Function) (char *Word[], char *WordEol[], void *Extra), int Priority, const char *Help, const char *Syntax, void *Extra);
+Adds a new command named CommandName that runs a function at priority Priority.
+Help is the text for /help Command, Syntax is the syntax for commands. Both can be null.
+Returns a number that can be passed to xchat_unhook() to remove the hook.
+OR the priority with PROTOCOL_CMD if you want the command to work only on tabs the script created.
+
+xchat_hook *Spark_AddEventHookWord(xchat_plugin *ph, const char *EventName, int (*Function) (char *Word[], void *Extra), int Priority, int Flags, int Need0, int Need1, void *Extra);
+xchat_hook *Spark_AddEventHookJSON(xchat_plugin *ph, const char *EventName, int (*Function) (cJSON *JSON, void *Extra), int Priority, int Flags, int Need0, int Need1, void *Extra);
+Adds a new event hook for type EventName that will run a function at priority Priority.
+Flags is probably unused.
+Need0 and Need1 are bits in the event that need to both be 0 or 1 respectively for the hook to trigger.
+Returns a number that can be passed to xchat_unhook() to remove the hook.
+The JSON version parses the event text as a JSON object.
+
+int   Spark_StartEvent(const char *TypeName, const char *EventInfo, int Flags);
+Starts an event or command of type TypeName, with EventInfo for the info.
+Use xchat_command() or xchat_commandf() to do commands.
+
+int   Spark_PathIsSafe(const char *Path);
+Returns 1 if path doesn't start with /, contain .. or :
+
+const char *Spark_GetConfigStr(const char *Default, const char *s,...);
+int   Spark_GetConfigInt(int Default, const char *s,...);
+Like api.GetConfigStr() and api.GetConfigInt() but the path is made with sprintf().
+
+const char *Spark_GetClipboard();
+Get the contents of the clipboard.
+
+int   Spark_SetClipboard(const char *New);
+Set the clipboard to some text.
+
+void  Spark_CurlGet(void (*Function) (void *Data, int Size, void *Extra), void *Extra, const char *URL);
+void  Spark_CurlPost(void (*Function) (void *Data, int Size, void *Extra), void *Extra, const char *URL, const char *Form);
+Downloads a file with Curl and calls Function when it finishes, it getting psased Extra.
+
+int Spark_NetOpen(void (*Function) (int Socket, int Event, char *Data), const char *Host, const char *Type);
+void Spark_NetSend(int Socket, const char *Text);
+void Spark_NetClose(int Socket, int Reopen);
+Open a socket, send text on a socket or close a socket. NetOpen returns and integer that can be passed to NetSend and NetClose.
+Host is a URL in the format host:port
+Function is called with (Socket, Event, Text) when an event happens on the socket.
+Data will be freed after the callback is called.
+Type is a string containing the following options separated by white space:
+"text"      - plain text handling
+"nosplit"   - do not separate by line
+"websocket" - websockets
+"ssl"       - use SSL
+
+int Spark_ListSkipTo(xchat_list *List, const char *SkipTo);
+Advances a list until the name reaches SkipTo. Returns 1 if found, or 0 if not.
+
+---- XChat plugin API functions ----
+See http://xchat.org/docs/plugin20.html for usage information.
+This will just note differences between Sparkles's implementation and XChat's.
+
+In hooks, XCHAT_PRI_MORE_HIGH and XCHAT_PRI_MORE_LOW have been added as priorities, between HIGH and HIGHEST and between LOW and LOWEST, respectively.
+
+-- Compatible --
+xchat_hook_command()
+xchat_hook_server() - IRC only
+xchat_hook_timer()
+xchat_unhook()
+xchat_command()
+xchat_commandf()
+xchat_print()
+xchat_printf()
+xchat_send_modes() - IRC only
+xchat_find_context()
+xchat_get_context()
+xchat_set_context()
+xchat_nickcmp()
+xchat_strip()
+xchat_free()
+xchat_get_info() - "event_text" and "win_ptr" unsupported. Additionally supports "gui_type", "protocol" and "ticket"
+xchat_list_free()
+xchat_list_next()
+xchat_list_str()
+xchat_list_int()
+
+-- Imperfect compatibility --
+xchat_list_get() - supports only "channels" and "users"
+xchat_get_prefs() - supports only "state_cursor", "id" and "input_command_char"
+
+- List fields -s
+"channels"
+channel(string) -channel or query name
+name(string)    -same as channel
+context(ptr)    -can be used with xchat_set_context
+flags(int)      -bit 0 set if connected, bit 1 set if connecting
+id(int)         -unique server ID
+network(string) -network name
+server(string)  -currently same as network
+type(in)        -1:server, 2:channel, 3:dialog
+users(int)      -number of users
+icon(string)    -icon associated with tab
+tabflags(int)   -tab flags
+
+"users"
+nick(string)    -nick of user
+name(string)    -same as nick
+away(int)       -1 if user is away
+host(string)    -user's host, or NULL
+realname(string)-user's realname, or NULL
+prefix(string)  -user's prefix
+selected(int)   -1 if user is selected
+lasttalk(int)   -last time user was seen talking
+
+"config config_path_here"
+name(string)    -name of the config item
+type(int)       -1:int, 2:string, 3:child, 4:boolean
+int(int)        -as integer
+string(string)  -as string
+
+"protocols"
+"addons"
+
+xchat_hook_print() - supports only the below functions
+- Channel: Change Nick,Topic Change, Kick, You Kicked, Join, Part, Part with Reason, Quit
+- Messages: Channel Action, Channel Action Hilight, Channel Message, Channel Msg Hilight, Channel Notice, CTCP Generic, CTCP Generic to Channel, Private Action, Private Action to Dialog, Private Message, Private Message to Dialog
+- Server: Connected, Disconnected, Invited, Logged In
+
+-- Unsupported functions --
+xchat_hook_fd()
+xchat_emit_print()

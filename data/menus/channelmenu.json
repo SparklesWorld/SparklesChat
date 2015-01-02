@@ -1,0 +1,13 @@
+{
+  "Settings":{
+    "<+ncht>Notify when posting here": "notify %n +chan %c",
+    "<-ncht>Don't notify when posting here": "notify %n -chan %c",
+    "<+igco>Ignore Color": "ignore %c +color",
+    "<-igco>Unignore Color": "ignore %c -color",
+    "<+igad>Ignore Ad": "ignore %c +ad",
+    "<-igad>Unignore Ad": "ignore %c -ad"
+  },
+  "Autojoin":"client autojoin %s",
+  "Leave":"part %s",
+  "Close":"client close %s"
+}

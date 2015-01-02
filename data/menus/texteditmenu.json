@@ -1,0 +1,58 @@
+{
+  "Cut":"client cut",
+  "Copy":"client copy",
+  "Paste":"client paste",
+  "Delete":"client delete",
+  "Select all":"client selectall",
+  "<irc>Insert": {
+    "Bold":"client inputaddchar 0x02",
+    "Italic":"client inputaddchar 0x1d",
+    "Underline":"client inputaddchar 0x1f",
+    "Inverse":"client inputaddchar 0x16",
+    "No formatting":"client inputaddchar 0x0f",
+    "Color 0-7": {
+      " 0: 00,00##":"client inputaddtext 00",
+      " 1: 01,01##":"client inputaddtext 01",
+      " 2: 02,02##":"client inputaddtext 02",
+      " 3: 03,03##":"client inputaddtext 03",
+      " 4: 04,04##":"client inputaddtext 04",
+      " 5: 05,05##":"client inputaddtext 05",
+      " 6: 06,06##":"client inputaddtext 06",
+      " 7: 07,07##":"client inputaddtext 07"
+    },
+    "Color 8-15": {
+      " 8: 08,08##":"client inputaddtext 08",
+      " 9: 09,09##":"client inputaddtext 09",
+      "10: 10,10##":"client inputaddtext 10",
+      "11: 11,11##":"client inputaddtext 11",
+      "12: 12,12##":"client inputaddtext 12",
+      "13: 13,13##":"client inputaddtext 13",
+      "14: 14,14##":"client inputaddtext 14",
+      "15: 15,15##":"client inputaddtext 15"
+    }
+  },
+  "<fchat>Insert": {
+    "Bold":"client inputaddtext [b]@[/b]",
+    "Italic":"client inputaddtext [i]@[/i]",
+    "Underline":"client inputaddtext [u]@[/u]",
+    "Strikeout":"client inputaddtext [s]@[/s]",
+    "Superscript":"client inputaddtext [sup]@[/sup]",
+    "Subscript":"client inputaddtext [sub]@[/sub]",
+    "Link":"client inputaddtext [url=@][/url]",
+    "Icon":"client inputaddtext [icon]@[/icon]",
+    "Color": {
+      "white 16,16##":"client inputaddtext [color=white]@[/color]",
+      "black 17,17##":"client inputaddtext [color=black]@[/color]",
+      "red   18,18##":"client inputaddtext [color=red]@[/color]",
+      "blue  19,19##":"client inputaddtext [color=blue]@[/color]",
+      "yellow20,20##":"client inputaddtext [color=yellow]@[/color]",
+      "green 21,21##":"client inputaddtext [color=green]@[/color]",
+      "pink  22,22##":"client inputaddtext [color=pink]@[/color]",
+      "gray  23,23##":"client inputaddtext [color=gray]@[/color]",
+      "orange24,24##":"client inputaddtext [color=orange]@[/color]",
+      "purple25,25##":"client inputaddtext [color=purple]@[/color]",
+      "brown 26,26##":"client inputaddtext [color=brown]@[/color]",
+      "cyan  27,27##":"client inputaddtext [color=cyan]@[/color]"
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "Client": {
+    "GUI": "SDL",
+    "SocketSetSize": 16
+  },
+
+  "General": {
+    "AwayReason": "I'm busy",
+    "AutoRejoin": 0,
+    "CommandChar": "/",
+    "AutoReconnect": 1,
+    "AutoReconnectOnFail": 1
+  },
+
+  "TextEdit": {
+    "CompletionAmount": 5,
+    "CompletionSuffix": ":",
+    "CompletionSort": "A-Z",
+    "SpellCheck": "en_US",
+    "LengthCounter": "bytes"
+  },
+
+  "ChatView": {
+    "LoggingOn": 1,
+    "TimeStampLogFormat": "%b %d %H:%M:%S ",
+    "TimeStampDisplayFormat": "(%I:%M%p) ",
+    "ScrollbackSize": 750,
+    "ColorNicks": 1
+  },
+
+  "Alerts": {
+    "Channel":"flash",
+    "Private":"flash sound",
+    "Hilight":"flash sound",
+    "HilightWords":"",
+    "HilightNames":"",
+    "NoHilightNames":"NickServ,ChanServ"
+  },
+
+  "Networks": {
+    "FChat": {
+      "FChat": {
+        "Host": "chat.f-list.net:9722",
+        "Secure": 9799
+      },
+      "FChatTest": {
+        "Host": "chat.f-list.net:8722",
+        "Secure": 8799
+      }
+    },
+
+    "IRC": {
+      "Default": {
+        "Nick":  "Test",
+        "Nick2": "Test_",
+        "Nick3": "Test__",
+        "Nick4": "Test___",
+        "Username": "Test",
+        "Realname": "Test",
+        "Idents": 1,
+        "BanType": "*!*user@*.host",
+        "PartReason": "Leaving",
+        "QuitReason": "Leaving",
+        "WaitNickserv": 1,
+        "SkipMOTD": 0
+      },
+      "AnthroChat": {
+        "Host": "irc.anthrochat.net",
+        "CoolChans": "#novaforest,#freedom",
+        "Secure": 6697
+      },
+      "IRCFox": {
+        "Host": "irc.ircfox.net",
+        "Secure": 6697
+      },
+      "CaffieNET": {
+        "Host": "irc.caffie.net",
+        "CoolChans": "#smwc,#radbusiness",
+        "Secure": 6697
+      },
+      "ElectroCode": {
+        "Host": "irc.novasquirrel.com",
+        "CoolChans": "#chat",
+        "Secure": 6697
+      },
+      "Cinos": {
+        "Host": "irc.cinos.biz",
+        "CoolChans": "#chat",
+        "Secure": 6697
+      },
+      "Xertion": {
+        "Host": "irc.xertion.org",
+        "CoolChans": "#lobby",
+        "Secure": 6697
+      }
+    }
+  }
+}

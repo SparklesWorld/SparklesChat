@@ -1,0 +1,27 @@
+{
+  "Private message":"query %n",
+  "Whois":"whois %n",
+  "Ignore":{
+    "<+igch>Ignore Channel":"ignore %n +chan",
+    "<-igch>Unignore Channel":"ignore %n -chan",
+    "<+igpr>Ignore Private":"ignore %n +priv",
+    "<-igpr>Unignore Private":"ignore %n -priv",
+    "<+igco>Ignore Color":"ignore %n +color",
+    "<-igco>Unignore Color":"ignore %n -color",
+    "<+igad>Ignore Ad":"ignore %n +ad",
+    "<-igad>Unignore Ad":"ignore %n -ad",
+    "<+igst>Ignore Status":"ignore %n +status",
+    "<-igst>Unignore Status":"ignore %n -status",
+    "Ignore All":"ignore %n +all",
+    "Unignore All":"ignore %n -all"
+  },
+  "Notify":{
+    "<+ncht>Notify when posting here":"notify %n +chan %c",
+    "<-ncht>Don't notify when posting here":"notify %n -chan %c",
+    "<+noti>Add to notify list":"nickwatch +%n",
+    "<-noti>Remove from notify list":"nickwatch -%n",
+    "<+book>Add to bookmark list":"bookmark +%n",
+    "<-book>Remove from bookmark list":"bookmark -%n"
+  },
+  "View notes":"nicknotes %n"
+}

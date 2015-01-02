@@ -1,0 +1,13 @@
+{
+  "Whois":"whois %n",
+  "Notify":{
+    "<+ncht>Notify when posting":"notify %n +priv",
+    "<-ncht>Don't notify when posting":"notify %n -priv",
+    "<+noti>Add to notify list":"nickwatch +%n",
+    "<-noti>Remove from notify list":"nickwatch -%n",
+    "<+book>Add to bookmark list":"bookmark +%n",
+    "<-book>Remove from bookmark list":"bookmark -%n"
+  },
+  "View notes":"nicknotes %n",
+  "Close":"close %n"
+}

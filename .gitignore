@@ -1,0 +1,7 @@
+*.o
+*.dll
+*.so
+*.exe
+obj/
+plugin/
+sdl2-config

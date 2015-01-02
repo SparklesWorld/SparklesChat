@@ -1,0 +1,4 @@
+EXPORTS
+  Sparkles_InitPlugin
+  Sparkles_DeInitPlugin
+  Sparkles_InstallLibrary
