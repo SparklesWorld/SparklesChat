@@ -33,8 +33,6 @@ int InitTextGUI() {
   keypad(stdscr, TRUE);
   nodelay(stdscr, TRUE);
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "colors %i color pairs %i", COLORS, COLOR_PAIRS);
-  PDC_set_title("Sparkles");
-  PDC_save_key_modifiers(1);
 
   if(can_change_color()) {
     for(int i=0;i<IRCCOLOR_PALETTE_SIZE;i++) {
@@ -45,12 +43,18 @@ int InitTextGUI() {
 
   TextGUI_Redraw();
 //  box(stdscr,'|','-');
+  border('|', '|', '-', '-', '.', '.', '\'', '\'');
   return 1;
 }
 void RunTextGUI() {
   int k = getch();
   if(k==ERR) return;
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "%c or %i %i", k, k, PDC_get_key_modifiers());
+  if(k==KEY_RESIZE) {
+    resize_term(0, 0);
+    border('|', '|', '-', '-', '.', '.', '\'', '\'');
+  }
+  //SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "%c or %i", k, k);
+  mvprintw(5, 5, "%c or %i", k, k);
   if(k=='q')
     quit = 1;
 }

@@ -225,7 +225,7 @@ void RunSquirrelMisc() { // currently only handles timers
       struct SqCurl *State = NULL;
       CURL *Easy = TransferInfo->easy_handle;
 
-      if(curl_easy_getinfo(Easy, CURLINFO_PRIVATE, &State) != CURLE_OK)
+      if(curl_easy_getinfo(Easy, CURLINFO_PRIVATE, (char*)&State) != CURLE_OK)
         continue;
       int Return = TransferInfo->data.result;
 

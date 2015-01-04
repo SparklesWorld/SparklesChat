@@ -221,7 +221,7 @@ int RunEventThread(void *Data);
 int RunSocketThread(void *Data);
 
 int main( int argc, char* args[] ) {
-  if(SDL_Init(SDL_INIT_VIDEO) < 0){
+  if(SDL_Init(0) < 0){
     printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
     return 0;
   }
@@ -243,6 +243,8 @@ int main( int argc, char* args[] ) {
       GUIType = i;
       break;
     }
+  if(GUIType == 0) // only initialize video if we're using it
+    SDL_InitSubSystem(SDL_INIT_VIDEO);
   PluginPref = cJSON_Load("pluginpref.json");
   if(!PluginPref)
     PluginPref = cJSON_CreateObject();

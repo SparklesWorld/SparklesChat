@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
-
+#ifdef _WIN32
 #include <errno.h>
 #include <ctype.h>
 #include "fnmatch.h"
@@ -176,3 +176,4 @@ int fnmatch (const char *pattern, const char *string, int flags) {
 
   return FNM_NOMATCH;
 }
+#endif

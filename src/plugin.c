@@ -625,7 +625,7 @@ int xchat_pluginpref_set_str(xchat_plugin *ph, const char *var, const char *valu
   cJSON *Pref = GetPluginPref(ph);
   cJSON *Find = cJSON_GetObjectItem(Pref, var);
   if(Find) {
-    realloc(Find->valuestring, strlen(value)+1);
+    Find->valuestring = realloc(Find->valuestring, strlen(value)+1);
     strcpy(Find->valuestring, value);
   } else
     cJSON_AddStringToObject(Find, var, value);

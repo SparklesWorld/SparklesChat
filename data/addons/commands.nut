@@ -20,7 +20,8 @@ local CmdAliases = {
   "leave":"part &2",
   "promote":"op &2",
   "demote":"deop &2",
-  "logout":"quit"
+  "logout":"quit",
+  "rejoin":"cycle"
 };
 function EchoCmd(T, P, C) {
   api.AddMessage(P, C, 0, 0);

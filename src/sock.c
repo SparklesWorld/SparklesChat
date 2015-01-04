@@ -185,7 +185,11 @@ int RunSocketThread(void *Data) {
     if(!FirstSock) // no sockets? don't do the check
       continue;
 
+#ifdef _WIN32
     FD_SET ReadSet;
+#else
+    fd_set ReadSet;
+#endif
     FD_ZERO(&ReadSet);
 
     for(SqSocket *Sock = FirstSock; Sock;) {
@@ -196,11 +200,15 @@ int RunSocketThread(void *Data) {
         FD_SET(Sock->Socket, &ReadSet);
       Sock = Next;
     }
-
     struct timeval timeout = {0, 0};
     int Total = select(0, &ReadSet, NULL, NULL, &timeout);
+#ifdef _WIN32
     if(Total == SOCKET_ERROR)
       SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "select error: %i", WSAGetLastError());
+#else
+    if(Total == -1)
+      SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "select error: %s", strerror(errno));
+#endif
     else
       for(SqSocket *Sock = FirstSock; Sock; Sock=Sock->Next)
         if(FD_ISSET(Sock->Socket, &ReadSet)) {

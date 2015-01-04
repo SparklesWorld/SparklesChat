@@ -317,9 +317,12 @@ function HandleServerMessage(S, Command, P) {
         api.Event("channel part", {"Nick":P.character}, Channel.Tab);
       break;
     case "LIS": // list of all users
-// crashes the client when trying to connect and these two lines aren't commented out?
-      foreach(User in P.characters)
+      local count = 0;
+      foreach(User in P.characters) {
+        print(User[0].tolower() +" "+count+" out of "+P.characters.len());
+        count++;
         S.GlobalUsers[User[0].tolower()] <- GlobalUser(User[0], User[1], User[2], User[3]);
+      }
       break;
     case "NLN": // user came online
       S.GlobalUsers[P.identity.tolower()] <- GlobalUser(P.identity, P.gender, P.status, "");
