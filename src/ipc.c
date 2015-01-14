@@ -35,7 +35,7 @@ int IPC_New(IPC_Queue *Out[], int Size, int Queues) {
 void IPC_Free(IPC_Queue *Holder[], int Queues) {
   for(int i=0; i<Queues; i++) {
     for(int j=0; j<Holder[i]->Size; j++)
-      if(Holder[i]->Queue[j].Text)
+      if(SDL_AtomicGet(&Holder[i]->Queue[j].Used) && Holder[i]->Queue[j].Text)
         free(Holder[i]->Queue[j].Text);
     free(Holder[i]->Queue);
     SDL_DestroyMutex(Holder[i]->Mutex);
