@@ -29,7 +29,6 @@ dllobjlistdll := $(foreach dll,$(dllobjlist),$(dlldir)/$(dll).dll)
 .PHONY: clean
 
 chat: $(objlisto) $(objlistopp)
-	@mkdir -p $(@D)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(objdir)/%.o: $(srcdir)/%.c

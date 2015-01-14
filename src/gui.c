@@ -27,12 +27,12 @@ int KeyboardFocus = 0;
 int Minimized = 0;
 int MouseFocus = 0;
 int ScrollbarW = 20;
+extern int UsingTUI;
 
 extern SDL_Color IRCColors[];
 extern FontSet ChatFont;
 void StartPopupCommandMenu(GUIState *s, cJSON *JSON, char *Include);
 SDL_Cursor *SystemCursors[SYSCURSOR_MAX];
-//Sparkleschat, Settings, Server, Window, Extras, Help
 char EditBuffer[INPUTBOX_SIZE] = "";
 char InputboxChars[10] = "";
 char InputStatus[400] = "";
@@ -66,17 +66,24 @@ GUIState MainGUI = {
   GSF_NEED_INITIALIZE, 0, 0, 800, 600, NULL, ResizeMainGUI, &ChatFont, MainDialog,
   NULL, NULL, NULL, NULL
 };
-#define NUM_GUISTATES 10
 GUIState *GUIStates[NUM_GUISTATES] = {&MainGUI, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+
+int TUI_ScreenClear(int msg,struct GUIDialog *d, GUIState *s);
+int TUI_StaticText(int msg,struct GUIDialog *d, GUIState *s);
+int TUI_PopupMenu(int msg,struct GUIDialog *d, GUIState *s);
+int TUI_ChatView(int msg,struct GUIDialog *d, GUIState *s);
+int TUI_ChatEdit(int msg,struct GUIDialog *d, GUIState *s);
+int TUI_MenuButton(int msg,struct GUIDialog *d, GUIState *s);
+int TUI_ChannelTabs(int msg,struct GUIDialog *d, GUIState *s);
 
 int IsInsideRect(int X1, int Y1, int X2, int Y2, int W, int H) {
   if(X1<X2) return 0;
   if(Y1<Y2) return 0;
-  if(X1>(X2+W)) return 0;
-  if(Y1>(Y2+H)) return 0;
+  if(X1>=(X2+W)) return 0;
+  if(Y1>=(Y2+H)) return 0;
   return 1;
 }
-int inline IsInsideWidget(int X1, int Y1, GUIDialog *D) {
+int IsInsideWidget(int X1, int Y1, GUIDialog *D) {
   return IsInsideRect(X1, Y1, D->x, D->y, D->w, D->h);
 }
 int SetACursor;
@@ -165,7 +172,6 @@ int InitMinimalGUI() {
 
   SDL_SetWindowIcon(window, WindowIcon);
   SDL_StartTextInput();
-
   return 1;
 }
 
@@ -203,33 +209,33 @@ void RunMinimalGUI() {
         case MTR_EDIT_CUT:         // d1 = context
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
-          State->MessageKey = MakeKeysym(&Key, SDLK_x, KMOD_CTRL);
+          State->MessageKey.SDL = MakeKeysym(&Key, SDLK_x, KMOD_CTRL);
           RunWidget(MSG_KEY, ChatEdit, State);
           break;
         case MTR_EDIT_COPY:        // d1 = context
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
-          State->MessageKey = MakeKeysym(&Key, SDLK_c, KMOD_CTRL);
+          State->MessageKey.SDL = MakeKeysym(&Key, SDLK_c, KMOD_CTRL);
           RunWidget(MSG_KEY, ChatEdit, State);
           break;
         case MTR_EDIT_DELETE:      // d1 = context
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
           if(EditInfo->HasSelect) {
-            State->MessageKey = MakeKeysym(&Key, SDLK_BACKSPACE, 0);
+            State->MessageKey.SDL = MakeKeysym(&Key, SDLK_BACKSPACE, 0);
             RunWidget(MSG_KEY, ChatEdit, State);
           }
           break;
         case MTR_EDIT_PASTE:       // d1 = context
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
-          State->MessageKey = MakeKeysym(&Key, SDLK_v, KMOD_CTRL);
+          State->MessageKey.SDL = MakeKeysym(&Key, SDLK_v, KMOD_CTRL);
           RunWidget(MSG_KEY, ChatEdit, State);
           break;
         case MTR_EDIT_SELECT_ALL:  // d1 = context
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
-          State->MessageKey = MakeKeysym(&Key, SDLK_a, KMOD_CTRL);
+          State->MessageKey.SDL = MakeKeysym(&Key, SDLK_a, KMOD_CTRL);
           RunWidget(MSG_KEY, ChatEdit, State);
           break;
         case MTR_EDIT_INPUT_TEXT:  // d1 = context, d2 = text
@@ -250,7 +256,7 @@ void RunMinimalGUI() {
         case MTR_EDIT_SET_TEXT:    // d1 = context, d2 = text
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
-          State->MessageKey = MakeKeysym(&Key, SDLK_a, KMOD_CTRL);
+          State->MessageKey.SDL = MakeKeysym(&Key, SDLK_a, KMOD_CTRL);
           RunWidget(MSG_KEY, ChatEdit, State);
           State->MessageText = e.user.data2;
           RunWidget(MSG_CHAR, ChatEdit, State);
@@ -259,7 +265,7 @@ void RunMinimalGUI() {
         case MTR_EDIT_APPEND_TEXT: // d1 = context, d2 = text
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
-          State->MessageKey = MakeKeysym(&Key, SDLK_END, 0);
+          State->MessageKey.SDL = MakeKeysym(&Key, SDLK_END, 0);
           RunWidget(MSG_KEY, ChatEdit, State);
           State->MessageText = e.user.data2;
           RunWidget(MSG_CHAR, ChatEdit, State);
@@ -314,7 +320,7 @@ void RunMinimalGUI() {
         GUI_SetCursor(SYSCURSOR_NORMAL);
      } else if(e.type == SDL_KEYDOWN) {
       // https://wiki.libsdl.org/SDL_KeyboardEvent
-      GUIStates[CurWindow]->MessageKey = &e.key.keysym;
+      GUIStates[CurWindow]->MessageKey.SDL = &e.key.keysym;
       ModKeys = e.key.keysym.mod;
       if(GUIStates[CurWindow]->PriorityClickDialog)
         RunWidget(MSG_KEY, GUIStates[CurWindow]->PriorityClickDialog, GUIStates[CurWindow]);
@@ -427,6 +433,7 @@ int RunWidget(int msg,struct GUIDialog *d, GUIState *s) {
 }
 
 int Widget_ScreenClear(int msg,struct GUIDialog *d, GUIState *s) {
+  if(UsingTUI) return TUI_ScreenClear(msg, d, s);
   SDL_Renderer *Renderer = s->Renderer;
   if(msg == MSG_START || msg == MSG_DRAW) {
     SDL_SetRenderDrawColor(Renderer, IRCColors[d->bg].r, IRCColors[d->bg].g, IRCColors[d->bg].b, 255);
@@ -438,6 +445,7 @@ int Widget_ScreenClear(int msg,struct GUIDialog *d, GUIState *s) {
 
 int Widget_StaticImage(int msg,struct GUIDialog *d, GUIState *s) {
 // dp=texture
+  if(UsingTUI) return D_O_K;
   SDL_Renderer *Renderer = s->Renderer;
   if(msg == MSG_START || msg == MSG_DRAW) {
     if(!d->dp) return D_O_K;
@@ -450,6 +458,7 @@ int Widget_StaticImage(int msg,struct GUIDialog *d, GUIState *s) {
 
 int Widget_StaticText(int msg,struct GUIDialog *d, GUIState *s) {
 // dp=text, dp2=font, dp3=rendermode
+  if(UsingTUI) return TUI_StaticText(msg, d, s);
   FontSet *Font = (FontSet*)d->dp2;
   int DrawY = d->y;
   if(d->h) DrawY = d->y+(d->h/2-Font->Height/2);
@@ -496,12 +505,12 @@ int Widget_TextEdit(int msg,struct GUIDialog *d, GUIState *s) {
   if(msg == MSG_START)
     strcat(EditBuffer, " ");
   else if(msg == MSG_KEY) { // key press, but not text input
-    int Key = s->MessageKey->sym;
-    int Cut = (Key == SDLK_x && (s->MessageKey->mod & KMOD_CTRL)) || (Key == SDLK_DELETE && (s->MessageKey->mod & KMOD_SHIFT));
-    int Copy = (Key == SDLK_c && (s->MessageKey->mod & KMOD_CTRL)) || (Key == SDLK_INSERT && (s->MessageKey->mod & KMOD_CTRL));
-    Paste = SDL_HasClipboardText() && ((Key == SDLK_v && (s->MessageKey->mod & KMOD_CTRL)) || (Key == SDLK_INSERT && (s->MessageKey->mod & KMOD_SHIFT)));
+    int Key = s->MessageKey.SDL->sym;
+    int Cut = (Key == SDLK_x && (s->MessageKey.SDL->mod & KMOD_CTRL)) || (Key == SDLK_DELETE && (s->MessageKey.SDL->mod & KMOD_SHIFT));
+    int Copy = (Key == SDLK_c && (s->MessageKey.SDL->mod & KMOD_CTRL)) || (Key == SDLK_INSERT && (s->MessageKey.SDL->mod & KMOD_CTRL));
+    Paste = SDL_HasClipboardText() && ((Key == SDLK_v && (s->MessageKey.SDL->mod & KMOD_CTRL)) || (Key == SDLK_INSERT && (s->MessageKey.SDL->mod & KMOD_SHIFT)));
 
-    if(!EditInfo->HasSelect & (Key == SDLK_LEFT || Key == SDLK_RIGHT || Key == SDLK_HOME || Key == SDLK_END) && (s->MessageKey->mod & KMOD_SHIFT)) {
+    if(!EditInfo->HasSelect & (Key == SDLK_LEFT || Key == SDLK_RIGHT || Key == SDLK_HOME || Key == SDLK_END) && (s->MessageKey.SDL->mod & KMOD_SHIFT)) {
       EditInfo->SelectChars = EditInfo->CursorChars;
       EditInfo->SelectBytes = EditInfo->CursorBytes;
       EditInfo->HasSelect = 1;
@@ -527,21 +536,21 @@ int Widget_TextEdit(int msg,struct GUIDialog *d, GUIState *s) {
         Temp[EditLen-1] = 0;
         SDL_SetClipboardText(Temp);
       }
-    } else if(Key == SDLK_a && (s->MessageKey->mod & KMOD_CTRL)) {
+    } else if(Key == SDLK_a && (s->MessageKey.SDL->mod & KMOD_CTRL)) {
       EditInfo->SelectChars = 0;
       EditInfo->SelectBytes = EditBuffer;
       EditInfo->CursorChars = UnicodeLen(EditBuffer, NULL)-1;
       EditInfo->CursorBytes = UnicodeForward(EditBuffer, EditInfo->SelectChars);
       EditInfo->HasSelect = 1;
       NeedDraw = 1;
-    } else if(EditInfo->HasSelect && Key == SDLK_LEFT && !(s->MessageKey->mod & KMOD_SHIFT)) {
+    } else if(EditInfo->HasSelect && Key == SDLK_LEFT && !(s->MessageKey.SDL->mod & KMOD_SHIFT)) {
       if(EditInfo->SelectChars < EditInfo->CursorChars) {
         EditInfo->CursorChars = EditInfo->SelectChars;
         EditInfo->CursorBytes = EditInfo->SelectBytes;
       }
       EditInfo->HasSelect = 0;
       NeedDraw = 1;
-    } else if(EditInfo->HasSelect && Key == SDLK_RIGHT && !(s->MessageKey->mod & KMOD_SHIFT)) {
+    } else if(EditInfo->HasSelect && Key == SDLK_RIGHT && !(s->MessageKey.SDL->mod & KMOD_SHIFT)) {
       if(EditInfo->SelectChars > EditInfo->CursorChars) {
         EditInfo->CursorChars = EditInfo->SelectChars;
         EditInfo->CursorBytes = EditInfo->SelectBytes;
@@ -549,7 +558,7 @@ int Widget_TextEdit(int msg,struct GUIDialog *d, GUIState *s) {
       EditInfo->HasSelect = 0;
       NeedDraw = 1;
     } else if(Key == SDLK_LEFT) {
-      if(s->MessageKey->mod & KMOD_CTRL) { // prev word
+      if(s->MessageKey.SDL->mod & KMOD_CTRL) { // prev word
         EditInfo->CursorBytes = UnicodeWordStep(EditInfo->CursorBytes, -1, EditBuffer);
         EditInfo->CursorChars = UnicodeLen(EditBuffer, EditInfo->CursorBytes);
         NeedDraw = 1;
@@ -562,9 +571,9 @@ int Widget_TextEdit(int msg,struct GUIDialog *d, GUIState *s) {
         }
       }
     } else if(Key == SDLK_RIGHT) {
-      if(!(s->MessageKey->mod & KMOD_SHIFT))
+      if(!(s->MessageKey.SDL->mod & KMOD_SHIFT))
         EditInfo->HasSelect = 0;
-      if(s->MessageKey->mod & KMOD_CTRL) { // next word
+      if(s->MessageKey.SDL->mod & KMOD_CTRL) { // next word
         EditInfo->CursorBytes = UnicodeWordStep(EditInfo->CursorBytes, 1, EditBuffer);
         EditInfo->CursorChars = UnicodeLen(EditBuffer, EditInfo->CursorBytes);
         NeedDraw = 1;
@@ -587,7 +596,7 @@ int Widget_TextEdit(int msg,struct GUIDialog *d, GUIState *s) {
     } else if(Key == SDLK_DELETE) {
       if(EditInfo->HasSelect) {
         NeedDeleteSelect = 1;
-      } else if(s->MessageKey->mod & KMOD_CTRL) {
+      } else if(s->MessageKey.SDL->mod & KMOD_CTRL) {
         char *Temp = UnicodeWordStep(EditInfo->CursorBytes, 1, EditBuffer);
         if(Temp) {
           memmove(EditInfo->CursorBytes, Temp, strlen(Temp)+1);
@@ -603,7 +612,7 @@ int Widget_TextEdit(int msg,struct GUIDialog *d, GUIState *s) {
     } else if(Key == SDLK_BACKSPACE || Key == SDLK_KP_BACKSPACE) {
       if(EditInfo->HasSelect) {
         NeedDeleteSelect = 1;
-      } else if(s->MessageKey->mod & KMOD_CTRL) {
+      } else if(s->MessageKey.SDL->mod & KMOD_CTRL) {
         char *Temp = EditInfo->CursorBytes;
         EditInfo->CursorBytes = UnicodeWordStep(EditInfo->CursorBytes, -1, EditBuffer);
         EditInfo->CursorChars = UnicodeLen(EditBuffer, EditInfo->CursorBytes);
@@ -811,6 +820,7 @@ int PopupItemPassesFilter(const char *Item, const char *Available) {
 }
 int Widget_PopupMenu(int msg,struct GUIDialog *d, GUIState *s) {
 // d1=tab id, dp=json, dp2=include, dp3=menuinfo
+  if(UsingTUI) return TUI_PopupMenu(msg, d, s);
   SDL_Renderer *Renderer = s->Renderer;
   struct MenuState *MenuInfo = (struct MenuState*)d->dp3;
   int RowHeight = ChatFont.Height+4;
@@ -862,7 +872,7 @@ int Widget_PopupMenu(int msg,struct GUIDialog *d, GUIState *s) {
   }
 
   if(msg == MSG_KEY) {
-    int Key = s->MessageKey->sym;
+    int Key = s->MessageKey.SDL->sym;
     if(Key == SDLK_UP) {
       if(MenuInfo->CurHilight-1 >= -MenuInfo->CurLevel)
         MenuInfo->CurHilight--;
@@ -877,7 +887,7 @@ int Widget_PopupMenu(int msg,struct GUIDialog *d, GUIState *s) {
       NeedRedrawHilight = 1;
     }
   }
-  if((msg == MSG_CLICK || msg == MSG_DCLICK || (msg == MSG_KEY && s->MessageKey->sym == SDLK_RETURN))&&(MenuInfo->Ticks+2 < SDL_GetTicks())) {
+  if((msg == MSG_CLICK || msg == MSG_DCLICK || (msg == MSG_KEY && s->MessageKey.SDL->sym == SDLK_RETURN))&&(MenuInfo->Ticks+2 < SDL_GetTicks())) {
     if(MenuInfo->CurHilight >= 0) {
       cJSON *Temp = MenuInfo->Menus[MenuInfo->CurLevel];
       for(int i=0;i!=MenuInfo->CurHilight;i++) {
@@ -1056,6 +1066,7 @@ typedef struct ChatViewState {
 } ChatViewState;
 int Widget_ChatView(int msg,struct GUIDialog *d, GUIState *s) {
 // dp=tab dp3=chatviewinfo
+  if(UsingTUI) return TUI_ChatView(msg, d, s);
   SDL_Renderer *Renderer = s->Renderer;
   struct ChatViewState *ChatInfo = (struct ChatViewState*)d->dp3;
   ClientTab *Tab = (ClientTab*)d->dp;
@@ -1275,6 +1286,7 @@ int Widget_ChatView(int msg,struct GUIDialog *d, GUIState *s) {
 
 int Widget_ChatEdit(int msg,struct GUIDialog *d, GUIState *s) {
 // wrapper for Widget_TextEdit
+  if(UsingTUI) return TUI_ChatEdit(msg, d, s);
   char InsertChar[4]={0,0,0,0};
   int Return = Widget_TextEdit(msg, d, s);
 
@@ -1282,7 +1294,7 @@ int Widget_ChatEdit(int msg,struct GUIDialog *d, GUIState *s) {
   char *EditBuffer = (char*)d->dp;
 
   if(msg == MSG_KEY) {
-    int Key = s->MessageKey->sym;
+    int Key = s->MessageKey.SDL->sym;
     if(Key == SDLK_RETURN && strcmp(EditBuffer, " ")) {
       char CopyBuffer[strlen(EditBuffer)+1];
       strcpy(CopyBuffer, EditBuffer);
@@ -1318,7 +1330,7 @@ int Widget_ChatEdit(int msg,struct GUIDialog *d, GUIState *s) {
 
       Widget_TextEdit(MSG_DRAW, d, s);
     }
-    else if(s->MessageKey->mod & KMOD_CTRL) {
+    else if(s->MessageKey.SDL->mod & KMOD_CTRL) {
       int FormatKeys[] = {SDLK_b,SDLK_k,SDLK_u,SDLK_i,SDLK_o,0};
       char FormatChars[] = {0x02,0x03,0x1f,0x1d,0x0f,0};
       int i=0;
@@ -1340,6 +1352,7 @@ int Widget_ChatEdit(int msg,struct GUIDialog *d, GUIState *s) {
 }
 
 int Widget_MenuButton(int msg, struct GUIDialog *d, GUIState *s) {
+  if(UsingTUI) return TUI_MenuButton(msg, d, s);
   int Return = Widget_StaticImage(msg, d, s);
   if(msg == MSG_CLICK || msg == MSG_DCLICK) {
     *s->TempCmdTarget = 0;
@@ -1359,6 +1372,7 @@ struct ScrollState {
 };
 int Widget_ChannelTabs(int msg, struct GUIDialog *d, GUIState *s) {
 // d1=num entries, d2=drawn, dp=selected tab
+  if(UsingTUI) return TUI_ChannelTabs(msg, d, s);
   SDL_Renderer *Renderer = s->Renderer;
   ClientTab *SelectTab = (ClientTab*)d->dp;
   ClientTab *OldTab = (ClientTab*)d->dp;
@@ -1413,8 +1427,8 @@ int Widget_ChannelTabs(int msg, struct GUIDialog *d, GUIState *s) {
   if((!ScrollInfo->DragType && msg == MSG_DRAG) || (msg == MSG_MOUSEMOVE && CursorX>ResizeBarX && CursorX<(d->x+d->w)))
     GUI_SetCursor(SYSCURSOR_SIZE_EW);
 
-  if(msg == MSG_KEY && (s->MessageKey->mod & KMOD_CTRL) && SelectTab) {
-    int Key = s->MessageKey->sym;
+  if(msg == MSG_KEY && (s->MessageKey.SDL->mod & KMOD_CTRL) && SelectTab) {
+    int Key = s->MessageKey.SDL->sym;
     if(Key == SDLK_PAGEUP) {
       if(SelectTab->Prev) {
         SelectTab = SelectTab->Prev;

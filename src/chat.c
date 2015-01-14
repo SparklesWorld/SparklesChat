@@ -237,6 +237,12 @@ int main( int argc, char* args[] ) {
   LockSockets = SDL_CreateMutex();
 
   MainConfig = cJSON_Load("config.json");
+  if(!MainConfig) {
+    SDL_MessageBox(SDL_MESSAGEBOX_ERROR, "Error", NULL, "config.json has errors, so the client can't start.\n"
+                                                        "Make sure there's no comma after the last item in every {}.");
+    return 0;
+  }
+
   const char *GUITypeString = GetConfigStr("SDL", "Client/GUI");
   for(int i=0;GUINames[i];i++)
     if(!strcasecmp(GUINames[i],GUITypeString)) {

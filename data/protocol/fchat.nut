@@ -31,8 +31,10 @@ class Server {
   CHA = null;
   ORS = null;
   VAR = null;
-  MsgReady = false;
-  MsgQueue = null;
+  TalkReady = false;
+  TalkQueue = null;
+  JoinReady = false;
+  JoinQueue = null;
   function Send(Command, Info) {
     if(Info == null) {
       api.NetSend(this.Socket, Command);
@@ -48,7 +50,8 @@ class Server {
     Friends = [];
     Bookmarks = [];
     Channels = {};
-    MsgQueue = [];
+    TalkQueue = [];
+    JoinQueue = [];
     CHA = [];
     ORS = [];
     VAR = {
@@ -167,6 +170,7 @@ function Connect(Options) { // called by /connect
   local UseSSL = false;
   local AutoJoin = true;
   local Character = "";
+  local HostOverride = false;
   // parse options list
   for(local i=1;i<Options[0].len();i++) {
     local Option = Options[0][i];
@@ -175,12 +179,19 @@ function Connect(Options) { // called by /connect
     if(Option == "-noautojoin")
       AutoJoin = false;
     local Split = split(Option, "=");
-    if(Split.len() > 1)
+    if(Split.len() > 1) {
       if(Split[0] == "-char")
         Character = Split[1];
+      else if(Split[0] == "-host")
+        HostOverride = Split[1];
+    }
   }
 
-  local Host = api.GetConfigStr(ConfigPrefix+ServerName+"/Host", "");
+  local Host;
+  if(!HostOverride)
+    Host = api.GetConfigStr(ConfigPrefix+ServerName+"/Host", "");
+  else
+    Host = HostOverride;
   if(Host == "") {
     api.TempMessage("No host specified", null);
     return;
@@ -199,7 +210,7 @@ function GetOrMakeChannel(S, Show, Real) {
   return NewChannel;
 }
 
-function HandleServerMessage(S, Command, P) {
+function HandleServerMessage(S, Command, P, Raw) {
 // see https://wiki.f-list.net/F-Chat_Server_Commands
   function FixChannel(Id) {
     if(Id.len() > 4 && Id.slice(0,4) == "adh-")
@@ -208,12 +219,14 @@ function HandleServerMessage(S, Command, P) {
       return Id;
   }
   print("Command received: "+Command);//+" "+api.ToJSON(P));
+//  api.Event("fchat raw", {"Command":Command, "Info":Raw}, S.Tab);
   local Channel;
   switch(Command) {
     case "IDN": // identified
       S.Identified = true;
       S.Send("CHA", null);
       S.Send("ORS", null);
+      api.Event("server connected", {"Nick":S.Character}, S.Tab);
       break;
     case "VAR": // change variable
       S.VAR[P.variable] <- P.value;
@@ -283,10 +296,12 @@ function HandleServerMessage(S, Command, P) {
       api.Event("generic error", {"Text":P.message, "Number":P.number}, S.Tab);
       break;
     case "FKS": // search results
+      api.Event("fchat fks", {"Nicks":P.characters, "Kinks":P.kinks}, Channel.Tab);
       break;
     case "FLN": // a character went offline
-      // remove the user from all channels too
+      // todo: remove the user from all channels too
       delete S.GlobalUser[P.character.tolower()];
+      api.Event("fchat offline", {"Nick":P.character}, S.Tab);
       break;
     case "HLO": // hello
       api.AddMessage(P.message, S.Tab, 0, 0);
@@ -326,6 +341,7 @@ function HandleServerMessage(S, Command, P) {
       break;
     case "NLN": // user came online
       S.GlobalUsers[P.identity.tolower()] <- GlobalUser(P.identity, P.gender, P.status, "");
+      api.Event("fchat online", {"Nick":P.identity, "Gender":P.gender, "Status":P.status}, S.Tab);
       break;
     case "IGN": // ignore
       // todo: acknowledge add and delete?
@@ -401,14 +417,19 @@ function HandleServerMessage(S, Command, P) {
       local Character = S.GlobalUsers[P.character];
       Character.Status = Statuses[P.status.tolower()];
       Character.StatusMessage = api.ConvertBBCode(P.statusmsg);
+      api.Event("fchat status", {"Nick":P.character, "Gender":Genders[Character.Gender], "Status":P.status, "Text":P.statusmsg}, S.Tab);
       break;
     case "SYS": // system message
-      if("channel" in P)
+      if("channel" in P) {
         api.AddMessage(api.ConvertBBCode(P.message), S.Channels[FixChannel(P.channel)].Tab, 0, 0);
-      else
+        api.Event("fchat sys", {"Channel":P.channel, "Text":P.message}, S.Tab);
+      } else {
         api.AddMessage(api.ConvertBBCode(P.message), S.Tab, 0, 0);
+        api.Event("fchat sys", {"Text":P.message}, S.Tab);
+      }
       break;
     case "TPN": // typing status
+      api.Event("fchat tpn", {"Nick":P.character, "Status":P.status}, S.Tab);
       break;
     case "UPT": // uptime and other info
       api.AddMessage("Started at:"+P.startstring+" Accepted:"+P.accepted+" Channels:"+P.channels+" Users:"+P.users+" MaxUsers:"+P.maxusers, S.Tab, 0, 0);
@@ -432,9 +453,9 @@ function FChat_Socket(Socket, Event, Text) {
         break;
       api.AddMessage(">>\t"+Text, TheServer.RawTab, 0, 0);
       if(Text.len() == 3)
-        HandleServerMessage(Sockets[Socket], Text, {})
+        HandleServerMessage(Sockets[Socket], Text, {}, "{}");
       else
-        HandleServerMessage(Sockets[Socket], Text.slice(0,3), api.DecodeJSON(Text.slice(4)))        
+        HandleServerMessage(Sockets[Socket], Text.slice(0,3), api.DecodeJSON(Text.slice(4)), Text.slice(4));
       break;
   }
 }
@@ -680,7 +701,7 @@ function FindChannelWildcard(S, P) {
     if(api.WildMatch(Channel.name, P))
       return Channel.name;
   foreach(Channel in S.ORS)
-    if(api.WildMatch(Channel.name, P))
+    if(api.WildMatch(Channel.title, P))
       return Channel.name;
   return null;
 }

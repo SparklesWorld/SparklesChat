@@ -8,13 +8,18 @@ AddonInfo <- {
 function DisplayStartup() {
   api.TabCreate("Startup", "", TabFlags.NOLOGGING);
 
-  // the coolest banner
-  api.AddMessage("\x000309▄▀▀▄ █▀▀▄ ▄▀▀▄ █▀▀▄ █  █ █    █▀▀▀ ▄▀▀▄", "Startup", 0, 0);
-  api.AddMessage("\x000309▀▄   █▄▄▀ █▄▄█ █▄▄▀ █▄▀  █    █▄▄▄ ▀▄  ", "Startup", 0, 0);
-  api.AddMessage("\x000309  ▀▄ █    █  █ █ ▀▄ █ ▀▄ █    █      ▀▄", "Startup", 0, 0);
-  api.AddMessage("\x000309▀▄▄▀ █    █  █ █  █ █  █ █▄▄▄ █▄▄▄ ▀▄▄▀ "+api.GetInfo("ClientVersion"), "Startup", 0, 0);
   local Quotes = ["Squirrel powered!", "Cross platform!", "Modular design!", "Huge backlogs!", "Powerful scripting system!", "Flexible notification system!", "Supports XChat/HexChat plugins!", "The client for nerds!", "The client for power users!"];
-  api.AddMessage("\x000302"+Quotes[rand()%Quotes.len()], "Startup", 0, 0);
+  if(api.GetConfigStr("Client/GUI", "") != "Text") {
+    // the coolest banner
+    api.AddMessage("\x000309▄▀▀▄ █▀▀▄ ▄▀▀▄ █▀▀▄ █  █ █    █▀▀▀ ▄▀▀▄", "Startup", 0, 0);
+    api.AddMessage("\x000309▀▄   █▄▄▀ █▄▄█ █▄▄▀ █▄▀  █    █▄▄▄ ▀▄  ", "Startup", 0, 0);
+    api.AddMessage("\x000309  ▀▄ █    █  █ █ ▀▄ █ ▀▄ █    █      ▀▄", "Startup", 0, 0);
+    api.AddMessage("\x000309▀▄▄▀ █    █  █ █  █ █  █ █▄▄▄ █▄▄▄ ▀▄▄▀ "+api.GetInfo("ClientVersion"), "Startup", 0, 0);
+    api.AddMessage("\x000302"+Quotes[rand()%Quotes.len()], "Startup", 0, 0);
+  } else {
+    api.AddMessage("\x000309\x0002Sparkles\x0002 "+api.GetInfo("ClientVersion"), "Startup", 0, 0);
+    api.AddMessage("\x000302\x001d"+Quotes[rand()%Quotes.len()], "Startup", 0, 0);
+  }
   api.AddMessage("", "Startup", 0, 0);
 
   local NetworkList = api.GetConfigNames("Networks");

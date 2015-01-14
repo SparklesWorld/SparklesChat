@@ -213,17 +213,19 @@ enum EventReturn {
 };
 
 enum TabFlags {
-  COLOR_NORM = 0, /* normal channel color */
-  COLOR_TALK = 1, /* someone talked */
-  COLOR_DATA = 2, /* other data, not talking*/
-  COLOR_NAME = 3, /* name said */
-  COLOR_MASK = 3, /* mask to only get colors */
-  CHANNEL = 4,    /* is a channel */
-  QUERY = 8,      /* is a query */
-  SERVER = 16,    /* is a server */
-  NOTINCHAN = 32, /* user isn't in the channel, whether through being kicked or having parted */
-  NOLOGGING = 64, /* don't log this tab */
-  HIDDEN = 128,   /* hidden, detached tab */
+  COLOR_NORM = 0,  /* normal channel color */
+  COLOR_TALK = 1,  /* someone talked */
+  COLOR_DATA = 2,  /* other data, not talking*/
+  COLOR_NAME = 3,  /* name said */
+  COLOR_MASK = 3,  /* mask to only get colors */
+  CHANNEL = 4,     /* is a channel */
+  QUERY = 8,       /* is a query */
+  SERVER = 16,     /* is a server */
+  NOTINCHAN = 32,  /* user isn't in the channel, whether through being kicked or having parted */
+  NOLOGGING = 64,  /* don't log this tab */
+  HIDDEN = 128,    /* hidden, detached tab */
+  IS_TYPING = 256, /* user is typing */ 
+  HAS_TYPED = 512, /* has stuff typed */
 }
 
 enum MessageFlags {

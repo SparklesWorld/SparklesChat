@@ -56,6 +56,7 @@ typedef struct ClientTab _xchat_context;
 #define CLIENT_NAME "Sparkles"
 #define CLIENT_VERSION "0.01"
 #define CONTEXT_BUF_SIZE 90
+#define NUM_GUISTATES 10
 
 /* enum definitions */
 enum ContextTypes {
@@ -252,7 +253,8 @@ typedef struct ClientTab {
 #define TAB_NOTINCHAN   32 /* user isn't in the channel, whether through being kicked or having parted */
 #define TAB_NOLOGGING   64 /* don't log this tab */
 #define TAB_HIDDEN     128 /* hidden, detached tab */
-
+#define TAB_IS_TYPING  256 /* user is typing */ 
+#define TAB_HAS_TYPED  512 /* has stuff typed */
 struct _xchat_hook;
 
 typedef struct EventHook {
@@ -305,6 +307,10 @@ typedef struct GUIDialog {
    int flags;                    /* flags about the object state */
    int d1, d2;                   /* any data the object might require */
    void *dp, *dp2, *dp3;         /* pointers to more object data */
+   union {
+     void *Window;
+     void *dp4;
+   } Extra;
 } GUIDialog;
 
 typedef struct GUIState {
@@ -318,11 +324,14 @@ typedef struct GUIState {
   GUIDialog *PriorityClickDialog;
   GUIDialog *DragDialog;
   const char *MessageText; // text sent to a widget, like for a key press
-  SDL_Keysym *MessageKey; // key sent to a widget 
+  union {
+    SDL_Keysym *SDL; // key sent to a widget 
+    int Curses;
+  } MessageKey;
   char TempCmdTarget[CONTEXT_BUF_SIZE]; // for popups and such
 } GUIState;
 
-enum GSF_FLAGS {
+enum GSFFlags {
   GSF_NEED_INITIALIZE = 1, /* needs initialize messages sent */
   GSF_NEED_REDRAW = 2,     /* needs draw messages sent */
   GSF_NEED_PRESENT = 4,    /* needs SDL_RenderPresent() */
@@ -549,6 +558,7 @@ extern IPC_Queue *SocketQueue[1];
 #define GUIPOS_CHANNELTAB 5
 #define GUIPOS_CHATVIEW 6
 #define GUIPOS_POPUPMENU 7
+#define GUIPOS_LENGTH 7
 
 #define SCROLLBAR_NONE 0
 #define SCROLLBAR_HAS_MOUSE 1
