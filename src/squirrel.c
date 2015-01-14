@@ -879,7 +879,7 @@ Error:
   return 0;
 }
 void CleanTab(ClientTab *Tab) {
-  for(int i=0;Tab->Messages;i++)
+  for(int i=0;i<Tab->NumMessages;i++)
     if(Tab->Messages[i].RightExtend)
       free(Tab->Messages[i].RightExtend);
 }
@@ -901,7 +901,6 @@ SQInteger Sq_TabRemove(HSQUIRRELVM v) {
     // otherwise we're screwed
     MainThreadRequest(MTR_GUI_COMMAND, StringClone(ContextForTab(Focus, Buffer)), StringClone("focus"));
   }
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "remove start");
 
   if(Tab->Connection) {
     if(Tab->Connection->Ticket)
@@ -937,7 +936,6 @@ SQInteger Sq_TabRemove(HSQUIRRELVM v) {
   CleanTab(Tab);
   free(Tab);
   ChannelTabsIsDirty();
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "remove end");
   return 0;
 }
 SQInteger Sq_TabSetFlags(HSQUIRRELVM v) {

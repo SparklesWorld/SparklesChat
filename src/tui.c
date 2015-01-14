@@ -113,10 +113,10 @@ WINDOW *TUI_GetWindow(int msg, GUIDialog *d) {
     return NULL;
   }
   if(d->Extra.Window) {
-    if(getbegx(d->Extra.Window) != d->x || getbegy(d->Extra.Window) != d->y)
-      mvwin(d->Extra.Window, d->y, d->x);
-    if(getmaxx(d->Extra.Window) != d->w || getmaxy(d->Extra.Window) != d->h)
-      wresize(d->Extra.Window, d->h, d->w);
+    if(getbegx((WINDOW*)d->Extra.Window) != d->x || getbegy((WINDOW*)d->Extra.Window) != d->y)
+      mvwin((WINDOW*)d->Extra.Window, d->y, d->x);
+    if(getmaxx((WINDOW*)d->Extra.Window) != d->w || getmaxy((WINDOW*)d->Extra.Window) != d->h)
+      wresize((WINDOW*)d->Extra.Window, d->h, d->w);
     return (WINDOW*)d->Extra.Window;
   }
   d->Extra.Window = newwin(d->h, d->w, d->y, d->x);

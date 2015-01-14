@@ -211,7 +211,7 @@ int RunSocketThread(void *Data) {
 #endif
     else
       for(SqSocket *Sock = FirstSock; Sock; Sock=Sock->Next)
-        if(FD_ISSET(Sock->Socket, &ReadSet)) {
+        if(Sock->Socket >= 0 && FD_ISSET(Sock->Socket, &ReadSet)) {
           if(Sock->Flags & SQSOCK_WS_CONNECTED) {
             Sock->Flags &= ~SQSOCK_WS_BLOCKING;
             if(!wslay_event_want_read(Sock->Websocket) || wslay_event_recv(Sock->Websocket))
