@@ -60,8 +60,8 @@ void IPC_Write(IPC_Queue *Queue, const char *Text) {
       Queue->Queue[i].Id = SDL_AtomicGet(&Queue->MakeId);
       SDL_AtomicAdd(&Queue->MakeId, 1);
       SDL_AtomicSet(&Queue->Queue[i].Used, 2);
-      SDL_UnlockMutex(Queue->Mutex);
       SDL_CondSignal(Queue->Condition);
+      SDL_UnlockMutex(Queue->Mutex);
       return;
     }
   // we shouldn't be able to get here, but if we do, unlock stuff

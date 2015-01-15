@@ -762,6 +762,8 @@ int InitTextGUI() {
 }
 void RunTextGUI() {
   SDL_Event e;
+  SDL_LockMutex(LockTabs);
+  SDL_LockMutex(LockDialog);
   while(SDL_PollEvent(&e) != 0) {
     if(e.type == SDL_QUIT)
       quit = 1;
@@ -859,6 +861,8 @@ void RunTextGUI() {
 
   GUIDialog *ChatEdit = FindDialogWithProc(NULL, NULL, NULL, Widget_ChatEdit);
   struct TextEditInfo *EditInfo = (struct TextEditInfo*)ChatEdit->dp3;
+  SDL_UnlockMutex(LockTabs);
+  SDL_UnlockMutex(LockDialog);
 
   move(LINES-1, EditInfo->CursorChars-EditInfo->ScrollChars);
   refresh();

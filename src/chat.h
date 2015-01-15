@@ -547,7 +547,7 @@ extern int quit;
 extern CURLM *MultiCurl;
 extern int SqCurlRunning;
 extern char *PrefPath;
-extern SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets;
+extern SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets, *LockDialog;
 extern IPC_Queue *EventQueue[1];
 extern IPC_Queue *SocketQueue[1];
 

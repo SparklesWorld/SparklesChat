@@ -96,6 +96,7 @@ int CreateSqSock(HSQUIRRELVM v, HSQOBJECT Handler, const char *Host, int Flags) 
 // see also Spark_NetOpen in plugin.c
 
 void DeleteSocketById(int Id) {
+  SDL_LockMutex(LockSockets);
   for(SqSocket *Sock = FirstSock; Sock; Sock=Sock->Next)
     if(Sock->Id == Id) {
       if(FirstSock == Sock)
@@ -107,21 +108,31 @@ void DeleteSocketById(int Id) {
         wslay_event_context_free(Sock->Websocket);
       free(Sock->Buffer);
       free(Sock);
+      SDL_UnlockMutex(LockTabs);
       return;
     }
+  SDL_UnlockMutex(LockTabs);
 }
 
 SqSocket *FindSockById(int Id) {
+  SDL_LockMutex(LockSockets);
   for(SqSocket *Sock = FirstSock; Sock; Sock=Sock->Next)
-    if(Sock->Id == Id)
+    if(Sock->Id == Id) {
+      SDL_UnlockMutex(LockSockets);
       return Sock;
+    }
+  SDL_UnlockMutex(LockSockets);
   return NULL;
 }
 
 SqSocket *FindSockBySocket(int Socket) {
+  SDL_LockMutex(LockSockets);
   for(SqSocket *Sock = FirstSock; Sock; Sock=Sock->Next)
-    if(Sock->Socket == Socket)
+    if(Sock->Socket == Socket) {
+      SDL_UnlockMutex(LockSockets);
       return Sock;
+    }
+  SDL_UnlockMutex(LockSockets);
   return NULL;
 }
 
@@ -192,6 +203,7 @@ int RunSocketThread(void *Data) {
 #endif
     FD_ZERO(&ReadSet);
 
+    SDL_LockMutex(LockSockets);
     for(SqSocket *Sock = FirstSock; Sock;) {
       SqSocket *Next = Sock->Next;
       if(Sock->Flags & SQSOCK_CLEANUP)
@@ -276,6 +288,7 @@ int RunSocketThread(void *Data) {
     for(SqSocket *Sock = FirstSock; Sock; Sock=Sock->Next)
       if(Sock->Flags & SQSOCK_WS_CONNECTED && wslay_event_want_write(Sock->Websocket))
         wslay_event_send(Sock->Websocket);
+    SDL_UnlockMutex(LockSockets);
   }
   return 0;
 }

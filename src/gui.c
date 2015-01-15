@@ -178,6 +178,7 @@ int InitMinimalGUI() {
 void RunMinimalGUI() {
   SDL_Event e;
   SDL_LockMutex(LockTabs);
+  SDL_LockMutex(LockDialog);
   while(SDL_PollEvent(&e) != 0) {
     if(e.type == SDL_QUIT)
       quit = 1;
@@ -401,6 +402,7 @@ void RunMinimalGUI() {
   for(int j=0;GUIStates[CurWindow]->Dialog[j].proc;j++) // fix dirty state
     if(GUIStates[CurWindow]->Dialog[j].flags & D_DIRTY)
       RunWidget(MSG_DRAW, &GUIStates[CurWindow]->Dialog[j], GUIStates[CurWindow]); // automatically clears D_DIRTY
+  SDL_UnlockMutex(LockDialog);
   SDL_UnlockMutex(LockTabs);
 }
 

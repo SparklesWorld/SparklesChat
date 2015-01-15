@@ -218,7 +218,11 @@ function HandleServerMessage(S, Command, P, Raw) {
     else
       return Id;
   }
-  print("Command received: "+Command);//+" "+api.ToJSON(P));
+  if(Command != "NLN" && Command != "FLN" && Command != "STA") {
+    if(api.TabExists(S.RawTab) && Raw.len() < 700)
+      api.AddMessage(">>\t"+Raw, S.RawTab, 0, 0);
+    print("Command received: "+Command);//+" "+api.ToJSON(P));
+  }
 //  api.Event("fchat raw", {"Command":Command, "Info":Raw}, S.Tab);
   local Channel;
   switch(Command) {
@@ -300,7 +304,7 @@ function HandleServerMessage(S, Command, P, Raw) {
       break;
     case "FLN": // a character went offline
       // todo: remove the user from all channels too
-      delete S.GlobalUser[P.character.tolower()];
+      delete S.GlobalUsers[P.character.tolower()];
       api.Event("fchat offline", {"Nick":P.character}, S.Tab);
       break;
     case "HLO": // hello
@@ -311,15 +315,15 @@ function HandleServerMessage(S, Command, P, Raw) {
       api.Event("channel join", api.ToJSON({"Nick":P.character.identity}), Channel.Tab);
       break;
     case "ICH": // initial channel data
-      Channel = S.Channels[P.channel];
+      local NewChannel = S.Channels[P.channel];
       if(P.mode == "ads")
         NewChannel.ChatAllowed = false;
       else if(P.mode == "chat")
         NewChannel.AdsAllowed = false;
-      Channel.Users = [];
+      NewChannel.Users = [];
       foreach(key,value in P.users)
         if(key=="identity")
-          Channel.Users.append(value);
+          NewChannel.Users.append(value);
       break;
     case "KID": // reply to KIN
       break;
@@ -332,12 +336,14 @@ function HandleServerMessage(S, Command, P, Raw) {
         api.Event("channel part", {"Nick":P.character}, Channel.Tab);
       break;
     case "LIS": // list of all users
-      local count = 0;
-      foreach(User in P.characters) {
-        print(User[0].tolower() +" "+count+" out of "+P.characters.len());
-        count++;
-        S.GlobalUsers[User[0].tolower()] <- GlobalUser(User[0], User[1], User[2], User[3]);
+/*
+      local about = "";
+      foreach(key,val in P) {
+        about += key+"-"+val.len()+",";
       }
+*/
+      foreach(User in P.characters)
+        S.GlobalUsers[User[0].tolower()] <- GlobalUser(User[0], User[1], User[2], User[3]);
       break;
     case "NLN": // user came online
       S.GlobalUsers[P.identity.tolower()] <- GlobalUser(P.identity, P.gender, P.status, "");
@@ -414,8 +420,8 @@ function HandleServerMessage(S, Command, P, Raw) {
     case "SFC": // reporting someone
       break;
     case "STA": // status change
-      local Character = S.GlobalUsers[P.character];
-      Character.Status = Statuses[P.status.tolower()];
+      local Character = S.GlobalUsers[P.character.tolower()];
+      Character.Status = Statuses.find(P.status.tolower());
       Character.StatusMessage = api.ConvertBBCode(P.statusmsg);
       api.Event("fchat status", {"Nick":P.character, "Gender":Genders[Character.Gender], "Status":P.status, "Text":P.statusmsg}, S.Tab);
       break;
@@ -445,13 +451,12 @@ function FChat_Socket(Socket, Event, Text) {
     case SockEvents.CONNECTED:
       print("Connected: "+Text);
       local TheServer = Sockets[Socket];
-      TheServer.Send("IDN", {"method": "ticket", "account": TheServer.Account, "ticket": TheServer.Ticket, "character":  TheServer.Character, "cname": api.GetInfo("ClientName"), "cversion": api.GetInfo("ClientVersion") });
+      TheServer.Send("IDN", {"method": "ticket", "account": TheServer.Account, "ticket": TheServer.Ticket, "character":  TheServer.Character, "cname": api.GetInfo("ClientName"), "cversion": AddonInfo.Version+" (on "+api.GetInfo("ClientVersion")+")" });
       break;
     case SockEvents.NEW_DATA:
       local TheServer = Sockets[Socket];
       if(Text == "PIN")
         break;
-      api.AddMessage(">>\t"+Text, TheServer.RawTab, 0, 0);
       if(Text.len() == 3)
         HandleServerMessage(Sockets[Socket], Text, {}, "{}");
       else
@@ -756,6 +761,7 @@ function FChatAccountCmd(T, P, C) {
   Config["Password"] <- P[1][1];
   api.TempMessage("F-Chat account set to be "+P[0][0], C);
   api.SaveTable("fchat", Config);
+  return EventReturn.HANDLED;
 }
 
 api.AddCommandHook("say",      SayCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);

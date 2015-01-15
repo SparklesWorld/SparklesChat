@@ -801,14 +801,16 @@ char *ContextForTab(ClientTab *Tab, char *Buffer) {
 }
 
 void ChannelTabsIsDirty() {
+  SDL_LockMutex(LockDialog);
   GUIDialog *ChannelTabs = FindDialogWithProc(NULL, NULL, NULL, Widget_ChannelTabs);
   if(ChannelTabs)
     ChannelTabs->flags |= D_DIRTY;
+  SDL_UnlockMutex(LockDialog);
 }
 
 int TabIdCounter = 1;
 SQInteger Sq_TabCreate(HSQUIRRELVM v) {
-//  SDL_LockMutex(LockTabs);
+  SDL_LockMutex(LockTabs);
   const SQChar *Name, *Context;
   SQInteger Flags;
   sq_getstring(v, 2, &Name);
@@ -1074,16 +1076,20 @@ SQInteger Sq_TabGetInfo(HSQUIRRELVM v) {
   sq_pushnull(v); return 1;
 }
 SQInteger Sq_TabExists(HSQUIRRELVM v) {
+  SDL_LockMutex(LockTabs);
   const SQChar *Context;
   sq_getstring(v, 2, &Context);
   sq_pushbool(v, FindTab(Context)?SQTrue:SQFalse);
+  SDL_UnlockMutex(LockTabs);
   return 1;
 }
 SQInteger Sq_TabFind(HSQUIRRELVM v) {
 // to do later, will let you specify a parent to search in or context
+  SDL_LockMutex(LockTabs);
   const SQChar *Name, *Parent;
   sq_getstring(v, 2, &Name);
   sq_getstring(v, 2, &Parent);
+  SDL_UnlockMutex(LockTabs);
   return 1;
 }
 
@@ -1190,6 +1196,7 @@ int SqX_AddMessage(const char *Message, ClientTab *Tab, time_t Time, int Flags) 
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "%s", Message);
     return -1;
   }
+  SDL_LockMutex(LockTabs);
   if(!Tab->Messages) { // need to allocate channel message buffer?
     int ArraySize = Tab->MessageBufferSize;
     if(!ArraySize) ArraySize = GetConfigInt(500, "ChatView/ScrollbackSize");
@@ -1241,6 +1248,7 @@ int SqX_AddMessage(const char *Message, ClientTab *Tab, time_t Time, int Flags) 
     ContextForTab(Tab, Buffer);
     MainThreadRequest(MTR_INFO_ADDED, StringClone(Buffer), NULL);
   }
+  SDL_UnlockMutex(LockTabs);
   return CurMessageId++;
 }
 
@@ -1253,7 +1261,9 @@ SQInteger Sq_AddMessage(HSQUIRRELVM v) {
   if(!Time)
     Time = time(NULL);
   sq_getinteger(v, 5, &Flags);
+  SDL_LockMutex(LockTabs);
   ClientTab *Tab = FindTab(Context);
+  SDL_UnlockMutex(LockTabs);
   if(!Tab) return -1;
 
   sq_pushinteger(v, SqX_AddMessage(Message, Tab, Time, Flags));
@@ -1385,7 +1395,6 @@ extern sparkles_plugin BaseSparklesPlugin;
 extern xchat_plugin BaseXChatPlugin;
 ClientAddon *LoadAddon(const char *Path, ClientAddon **First) {
   const char *OnlyExtension = strrchr(Path, '.');
-
   ClientAddon *NewAddon = NULL;
 
   if(!*First) {

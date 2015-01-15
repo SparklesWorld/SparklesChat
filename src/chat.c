@@ -37,7 +37,7 @@ EventType *FirstEventType = NULL;
 EventType *FirstCommand = NULL;
 EventHook *FirstTimer = NULL;
 CommandHelp *FirstHelp = NULL;
-SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets;
+SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets, *LockDialog;
 
 cJSON *cJSON_Search(cJSON *Root, char *SearchString) {
 // SearchString is formatted like "Path1\\Path2\\Path3". Individual paths are like a/b/c/d/e
@@ -263,9 +263,6 @@ int main( int argc, char* args[] ) {
   freopen("CON", "w", stderr);
   PrefPath = SDL_GetPrefPath("Bushytail Software","SparklesChat");
 
-  AutoloadDirectory("data/protocol/", "nut", AutoloadAddon);
-  AutoloadDirectory("data/addons/", "nut", AutoloadAddon);
-
   MenuMain = cJSON_Load("data/menus/mainmenu.json");
   MenuChannel = cJSON_Load("data/menus/channelmenu.json");
   MenuUser = cJSON_Load("data/menus/usermenu.json");
@@ -274,6 +271,10 @@ int main( int argc, char* args[] ) {
 
   SDL_Thread *EventThread = SDL_CreateThread(RunEventThread, "Event", NULL);
   SDL_Thread *SocketThread = SDL_CreateThread(RunSocketThread, "Socket", NULL);
+
+  AutoloadDirectory("data/protocol/", "nut", AutoloadAddon);
+  AutoloadDirectory("data/addons/", "nut", AutoloadAddon);
+
   (*InitGUI[GUIType])();
   while(!quit) {
     (*RunGUI[GUIType])();
