@@ -746,7 +746,7 @@ function ListCmd(T, P, C) {
 
   api.AddMessage("\x0002Private:", C, 0, 0);
   foreach(Channel in S.ORS)
-    if(api.WildMatch(Channel.name, P))
+    if(api.WildMatch(Channel.title, P))
       api.AddMessage(api.Button("Join", "join "+Channel.name)+format(" %3i ", Channel.characters)+Channel.title, C, 0, 0);
   return EventReturn.HANDLED;
 }
