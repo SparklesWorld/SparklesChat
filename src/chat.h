@@ -245,8 +245,8 @@ typedef struct ClientTab {
 } ClientTab;
 
 #define TAB_COLOR_NORM   0 /* normal channel color */
-#define TAB_COLOR_TALK   1 /* someone talked */
-#define TAB_COLOR_DATA   2 /* other data, not talking*/
+#define TAB_COLOR_DATA   1 /* other data, not talking*/
+#define TAB_COLOR_TALK   2 /* someone talked */
 #define TAB_COLOR_NAME   3 /* name said */
 #define TAB_COLOR_MASK   3 /* mask to only get colors */
 #define TAB_CHANNEL      4 /* is a channel */

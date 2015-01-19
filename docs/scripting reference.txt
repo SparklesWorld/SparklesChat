@@ -214,8 +214,8 @@ enum EventReturn {
 
 enum TabFlags {
   COLOR_NORM = 0,  /* normal channel color */
-  COLOR_TALK = 1,  /* someone talked */
-  COLOR_DATA = 2,  /* other data, not talking*/
+  COLOR_DATA = 1,  /* other data, not talking*/
+  COLOR_TALK = 2,  /* someone talked */
   COLOR_NAME = 3,  /* name said */
   COLOR_MASK = 3,  /* mask to only get colors */
   CHANNEL = 4,     /* is a channel */

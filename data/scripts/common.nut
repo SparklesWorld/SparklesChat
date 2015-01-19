@@ -24,8 +24,8 @@ enum EventReturn {
 
 enum TabFlags {
   COLOR_NORM = 0,  /* normal channel color */
-  COLOR_TALK = 1,  /* someone talked */
-  COLOR_DATA = 2,  /* other data, not talking*/
+  COLOR_DATA = 1,  /* other data, not talking*/
+  COLOR_TALK = 2,  /* someone talked */
   COLOR_NAME = 3,  /* name said */
   COLOR_MASK = 3,  /* mask to only get colors */
   CHANNEL = 4,     /* is a channel */
@@ -131,9 +131,8 @@ api.SaveTable <- function (Filename, Contents) {
   api.SaveTextFile(Filename, api.ToJSON(Contents))
 }
 api.TabSetColor <- function (Context, Color) {
-  local Ranks = [0, 2, 1, 3];
   local OldColor = api.TabGetFlags(Context)&TabFlags.COLOR_MASK;
-  if(Ranks[Color] < Ranks[OldColor]) return;
+  if(Color < OldColor) return;
   api.TabSetFlags(Context, (api.TabGetFlags(Context)&~TabFlags.COLOR_MASK)|Color)
 }
 api.TempMessage <- function (Message, Context) {
