@@ -888,7 +888,6 @@ SQInteger Sq_TabCreate(HSQUIRRELVM v) {
     strftime(LogPath2, sizeof(LogPath2), LogPath1, TimeInfo);
 
     snprintf(LogPath1, sizeof(LogPath1), "%slogs/%s", PrefPath, LogPath2);
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Opening log file %s", LogPath1);
     if(PathIsSafe(LogPath2) && CreateDirectoriesForPath(LogPath1))
       NewPtr->LogFile = fopen(LogPath1, "wb");
   }

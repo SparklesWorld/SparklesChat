@@ -352,7 +352,12 @@ void DoSockEvent(SqSocket *Socket, int Event, const char *Text) {
   "E Type Context Info" - Event broadcast
   "S SockId Event Text" - Sock stores what script it is  automatically */
 int RunEventThread(void *Data) {
+  time_t FlushTime = 0;
   while(!quit) {
+    if(FlushTime < time(NULL)) {
+      fflush(NULL); // flush everything
+      FlushTime = time(NULL) + 150;
+    }
     char *Command;
     do {
       Command = IPC_Read(EventQueue[IPC_IN], 100);
