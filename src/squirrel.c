@@ -889,7 +889,7 @@ SQInteger Sq_TabCreate(HSQUIRRELVM v) {
 
     snprintf(LogPath1, sizeof(LogPath1), "%slogs/%s", PrefPath, LogPath2);
     if(PathIsSafe(LogPath2) && CreateDirectoriesForPath(LogPath1))
-      NewPtr->LogFile = fopen(LogPath1, "wb");
+      NewPtr->LogFile = fopen(LogPath1, "ab");
   }
   SDL_UnlockMutex(LockTabs);
   return 1;
