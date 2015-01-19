@@ -1319,6 +1319,8 @@ int Widget_ChatEdit(int msg,struct GUIDialog *d, GUIState *s) {
         char *CmdArgs = strchr(Command, ' ');
         if(CmdArgs)
           *(CmdArgs++) = 0;
+        else
+          CmdArgs = "";
         QueueEvent(Command, CmdArgs, Context, 'C');
       } else // say
         QueueEvent("say", EditStart, Context, 'C');

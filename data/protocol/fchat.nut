@@ -723,11 +723,12 @@ function UsersCmd(T, P, C) {
     api.TabRemove(S.Tab+"/!Users");
   C = api.TabCreate("!Users", S.Tab, TabFlags.NOLOGGING)
 
-  if(!P) P = "*";
+  if(P == "") P = "*";
 
   foreach(User in S.GlobalUsers)
     if(api.WildMatch(User.Name, P))
       api.AddMessage(format("%s (%s) is %s: %s", User.Name, Genders[User.Gender], Statuses[User.Status], User.StatusMessage), C, 0, 0);
+  return EventReturn.HANDLED;
 }
 
 function ListCmd(T, P, C) {
@@ -736,7 +737,7 @@ function ListCmd(T, P, C) {
     api.TabRemove(S.Tab+"/!List");
   C = api.TabCreate("!List", S.Tab, TabFlags.NOLOGGING)
 
-  if(!P) P = "*";
+  if(P == "") P = "*";
 
   api.AddMessage("\x0002Public:", C, 0, 0);
   foreach(Channel in S.CHA)
