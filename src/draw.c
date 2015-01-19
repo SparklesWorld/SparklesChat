@@ -62,14 +62,6 @@ void blitfull(SDL_Texture* SrcBmp, SDL_Renderer* DstBmp, int DestX, int DestY) {
   SDL_Rect Dst = {DestX, DestY};
   SDL_RenderCopy(DstBmp,  SrcBmp, NULL, &Dst);
 }
-void SDL_MessageBox(int Type, const char *Title, SDL_Window *Window, const char *fmt, ...) {
-  va_list argp;
-  va_start(argp, fmt);
-  char Buffer[512];
-  vsprintf(Buffer, fmt, argp);
-  SDL_ShowSimpleMessageBox(Type, Title, Buffer, Window);
-  va_end(argp);
-}
 
 void Free_FontSet(FontSet *Fonts) {
   if(Fonts->Font[0]) TTF_CloseFont(Fonts->Font[0]);

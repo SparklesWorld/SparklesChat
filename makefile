@@ -1,4 +1,4 @@
-objlist := chat draw gui tui cJSON text squirrel eventcmd fnmatch sock plugin ipc websocket
+objlist := chat draw gui tui cJSON text squirrel eventcmd fnmatch sock plugin ipc websocket util
 #dllobjlist := libvisual
 program_title = chat
 

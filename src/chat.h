@@ -462,6 +462,8 @@ int StartEvent(const char *TypeName, const char *EventInfo, const char *EventCon
 int NativeCommand(const char *Command, const char *Args, const char *Context);
 int XChatTokenize(const char *Input, char *WordBuff, const char **Word, const char **WordEol, int WordSize, int Flags);
 int AsyncExec(const char *Command);
+void AutoloadDirectory(const char *Directory, const char *Filetype, void (*Handler)(const char *Path));
+void AutoloadAddon(const char *Filename);
 void URLOpen(const char *URL);
 void GUI_SetCursor(int CursorNum);
 int PathIsSafe(const char *Path);
@@ -471,7 +473,7 @@ const char *GetConfigStr(const char *Default, const char *s,...);
 int GetConfigInt(int Default, const char *s,...);
 GUIDialog *FindDialogWithProc(const char *Context, GUIState *InState, GUIState **State, DIALOG_PROC Proc);
 char *ContextForTab(ClientTab *Tab, char *Buffer);
-//int IsInsideRect(int X1, int Y1, int X2, int Y2, int W, int H);
+int IsInsideRect(int X1, int Y1, int X2, int Y2, int W, int H);
 int SimulateWordWrap(FontSet *Fonts, RenderTextMode *Mode, const char *Text);
 __attribute__ ((hot)) const char *ConvertBBCode(char *Output, const char *Input, int Flags);
 ClientConnection *ConnectionForTab(ClientTab *Tab);

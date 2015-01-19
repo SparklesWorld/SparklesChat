@@ -76,13 +76,6 @@ int TUI_ChatEdit(int msg,struct GUIDialog *d, GUIState *s);
 int TUI_MenuButton(int msg,struct GUIDialog *d, GUIState *s);
 int TUI_ChannelTabs(int msg,struct GUIDialog *d, GUIState *s);
 
-int IsInsideRect(int X1, int Y1, int X2, int Y2, int W, int H) {
-  if(X1<X2) return 0;
-  if(Y1<Y2) return 0;
-  if(X1>=(X2+W)) return 0;
-  if(Y1>=(Y2+H)) return 0;
-  return 1;
-}
 int IsInsideWidget(int X1, int Y1, GUIDialog *D) {
   return IsInsideRect(X1, Y1, D->x, D->y, D->w, D->h);
 }

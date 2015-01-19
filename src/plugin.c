@@ -34,13 +34,6 @@ void *Spark_FindSymbol(const char *SymbolName) {
   return NULL;
 }
 
-char *StringClone(const char *CloneMe) {
-  char *Out = (char*)malloc(strlen(CloneMe)+1);
-  if(!Out) return NULL;
-  strcpy(Out, CloneMe);
-  return Out;
-}
-
 xchat_hook *MakeXChatHook(xchat_plugin *ph, EventHook *EHook, const char *EventName, int Type, void *Userdata) {
   xchat_hook *Hook = (xchat_hook*)malloc(sizeof(xchat_hook));
   if(!Hook) return NULL;

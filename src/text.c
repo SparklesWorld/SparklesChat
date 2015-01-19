@@ -383,3 +383,51 @@ void TextInterpolate(char *Out, const char *In, char Prefix, const char *Replace
   }
   *Out = 0;
 }
+
+char *FindCloserPointer(char *A, char *B) {
+  if(!A) // doesn't matter if B is NULL too, it'll just return the NULL
+    return B;
+  if(!B || A < B)
+    return A;
+  return B;
+}
+
+char *StringClone(const char *CloneMe) {
+  char *Out = (char*)malloc(strlen(CloneMe)+1);
+  if(!Out) return NULL;
+  strcpy(Out, CloneMe);
+  return Out;
+}
+
+int WildMatch(const char *TestMe, const char *Wild) {
+  char NewWild[strlen(Wild)+1];
+  char NewTest[strlen(TestMe)+1];
+  const char *Asterisk = strchr(Wild, '*');
+  if(Asterisk && !Asterisk[1]) return(!memcasecmp(TestMe, Wild, strlen(Wild)-1));
+
+  strcpy(NewTest, TestMe);
+  strcpy(NewWild, Wild);
+  int i;
+  for(i=0;NewWild[i];i++)
+    NewWild[i] = tolower(NewWild[i]);
+  for(i=0;NewTest[i];i++)
+    NewTest[i] = tolower(NewTest[i]);
+  return !fnmatch(NewWild, NewTest, FNM_NOESCAPE);
+}
+
+void strlcpy(char *Destination, const char *Source, int MaxLength) {
+  // MaxLength is directly from sizeof() so it includes the zero
+  int SourceLen = strlen(Source);
+  if((SourceLen+1) < MaxLength)
+    MaxLength = SourceLen + 1;
+  memcpy(Destination, Source, MaxLength-1);
+  Destination[MaxLength-1] = 0;
+}
+
+int memcasecmp(const char *Text1, const char *Text2, int Length) {
+  for(;Length;Length--)
+    if(tolower(*(Text1++)) != tolower(*(Text2++)))
+      return 1;
+  return 0;
+}
+

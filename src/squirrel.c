@@ -38,37 +38,6 @@ void Sq_ErrorFunc(HSQUIRRELVM v,const SQChar *s,...) {
   va_end(vl);
 }
 
-char *FindCloserPointer(char *A, char *B) {
-  if(!A) // doesn't matter if B is NULL too, it'll just return the NULL
-    return B;
-  if(!B || A < B)
-    return A;
-  return B;
-}
-
-int CreateDirectoriesForPath(const char *Folders) {
-  char Temp[strlen(Folders)+1];
-  strcpy(Temp, Folders);
-  struct stat st = {0};
-
-  char *Try = Temp;
-  if(Try[1] == ':' && Try[2] == '\\') // ignore drive names
-    Try = FindCloserPointer(strchr(Try+3, '/'), strchr(Try+3, '\\'));
-
-  while(Try) {
-    char Restore = *Try;
-    *Try = 0;
-    if(stat(Temp, &st) == -1) {
-      MakeDirectory(Temp);
-      if(stat(Temp, &st) == -1)
-        return 0;
-    }
-    *Try = Restore;
-    Try = FindCloserPointer(strchr(Try+1, '/'), strchr(Try+1, '\\'));
-  }
-  return 1;
-}
-
 ClientAddon *AddonForScript(HSQUIRRELVM v) {
   return (ClientAddon*)sq_getforeignptr(v);
 }
@@ -1436,13 +1405,6 @@ void Sq_Close(HSQUIRRELVM v) {
 // recipe for disaster: Sq_Close and sq_close with different behavior
   sq_pop(v,1);
   sq_close(v); 
-}
-
-const char *FilenameOnly(const char *Path) {
-  const char *Temp = strrchr(Path, '/');
-  if(!Temp) Temp = strrchr(Path, '\\');
-  if(!Temp) return Temp;
-  return Temp+1;
 }
 
 ClientAddon *FindAddon(const char *Name, ClientAddon **First) {

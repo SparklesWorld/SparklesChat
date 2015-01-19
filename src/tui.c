@@ -27,7 +27,6 @@
 #endif
 
 int UsingTUI = 0;
-int IsInsideRect(int X1, int Y1, int X2, int Y2, int W, int H);
 int IsInsideWidget(int X1, int Y1, GUIDialog *D);
 int TUI_RenderText(WINDOW *Window, int Y, int X, const char *Text);
 int TUI_RenderHeight(WINDOW *Window, const char *Text);
