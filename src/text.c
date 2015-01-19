@@ -363,3 +363,23 @@ const char __attribute__ ((hot)) *ConvertBBCode(char *Output, const char *Input,
   *Out = 0;
   return Output;
 }
+
+void TextInterpolate(char *Out, const char *In, char Prefix, const char *ReplaceThis, const char *ReplaceWith[]) {
+  while(*In) {
+    if(*In != Prefix)
+      *(Out++) = *(In++);
+    else {
+      In++;
+      char *Find = strchr(ReplaceThis, *(In++));
+      if(Find) {
+        int This = Find - ReplaceThis;
+        strcpy(Out, ReplaceWith[This]);
+        Out += strlen(ReplaceWith[This]);
+      } else {
+        *(Out++) = Prefix;
+        *(Out++) = In[-1];
+      }
+    }
+  }
+  *Out = 0;
+}

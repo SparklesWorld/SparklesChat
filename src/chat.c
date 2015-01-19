@@ -203,7 +203,7 @@ void URLOpen(const char *URL) {
 #elif defined(__unix__)
   pid_t pid = fork();
   if(pid == -1) return; // error
-  if(!pid) execl("xdg-open", URL);
+  if(!pid) execl("xdg-open", URL, NULL);
   int status;
   waitpid(pid, &status, 0);
 #endif

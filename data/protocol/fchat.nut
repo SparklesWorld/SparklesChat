@@ -336,12 +336,6 @@ function HandleServerMessage(S, Command, P, Raw) {
         api.Event("channel part", {"Nick":P.character}, Channel.Tab);
       break;
     case "LIS": // list of all users
-/*
-      local about = "";
-      foreach(key,val in P) {
-        about += key+"-"+val.len()+",";
-      }
-*/
       foreach(User in P.characters)
         S.GlobalUsers[User[0].tolower()] <- GlobalUser(User[0], User[1], User[2], User[3]);
       break;
@@ -799,6 +793,7 @@ api.AddCommandHook("timeout",  TimeoutCmd, Priority.NORMAL|PROTOCOL_CMD, null, n
 api.AddCommandHook("whois",    WhoisCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("list",     ListCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("users",    UsersCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
+api.AddCommandHook("preview",  BBTestCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("bbtest",   BBTestCmd, Priority.NORMAL, null, null);
 api.AddCommandHook("fchataccount", FChatAccountCmd, Priority.NORMAL, null, null);
 function SaveConfig(T, P, C) {

@@ -194,6 +194,8 @@ typedef struct ClientMessage {
 #define CMF_IGNORED    16 /* message source is ignored */
 #define CMF_SCROLLBACK 32 /* loaded from scrollback */
 #define CMF_TEMP_ALERT 64 /* message isn't logged and can be cleared away easily*/
+#define CMF_NO_LOGGING 128 /* don't log this message, but display it still */
+#define CMF_LOG_ONLY   256 /* only log this message, don't display */
 
 #define ICONLIST_SIZE 8
 typedef struct ListEntryIcons {
@@ -476,6 +478,9 @@ ClientConnection *ConnectionForTab(ClientTab *Tab);
 ClientAddon *AddonForScript(HSQUIRRELVM v);
 char *StringClone(const char *CloneMe);
 ClientTab *GetFocusedTab();
+void TextInterpolate(char *Out, const char *In, char Prefix, const char *ReplaceThis, const char *ReplaceWith[]);
+char *FindCloserPointer(char *A, char *B);
+int CreateDirectoriesForPath(const char *Folders);
 void MainThreadRequest(int Code, void *Data1, void *Data2);
 void RunSquirrelMisc();
 void InitSock();

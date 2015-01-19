@@ -52,6 +52,8 @@ enum MessageFlags {
   IGNORED = 16,    // message source is ignored
   SCROLLBACK = 32, // message loaded from scrollback
   TEMP = 64        // temp alert message, not logged, cleared away easily
+  NO_LOG = 128,    // message is not logged, only displayed
+  LOG_ONLY = 256   // message is not displayed, only logged
 }
 
 enum FF_Escapes {

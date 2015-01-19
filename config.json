@@ -1,7 +1,6 @@
 {
   "Client": {
-    "GUI": "SDL",
-    "SocketSetSize": 16
+    "GUI": "Text"
   },
 
   "General": {
@@ -22,6 +21,7 @@
 
   "ChatView": {
     "LoggingOn": 1,
+    "LoggingPath": "%n/%c.log",
     "TimeStampLogFormat": "%b %d %H:%M:%S ",
     "TimeStampDisplayFormat": "(%I:%M%p) ",
     "ScrollbackSize": 750,

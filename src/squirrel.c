@@ -38,6 +38,37 @@ void Sq_ErrorFunc(HSQUIRRELVM v,const SQChar *s,...) {
   va_end(vl);
 }
 
+char *FindCloserPointer(char *A, char *B) {
+  if(!A) // doesn't matter if B is NULL too, it'll just return the NULL
+    return B;
+  if(!B || A < B)
+    return A;
+  return B;
+}
+
+int CreateDirectoriesForPath(const char *Folders) {
+  char Temp[strlen(Folders)+1];
+  strcpy(Temp, Folders);
+  struct stat st = {0};
+
+  char *Try = Temp;
+  if(Try[1] == ':' && Try[2] == '\\') // ignore drive names
+    Try = FindCloserPointer(strchr(Try+3, '/'), strchr(Try+3, '\\'));
+
+  while(Try) {
+    char Restore = *Try;
+    *Try = 0;
+    if(stat(Temp, &st) == -1) {
+      MakeDirectory(Temp);
+      if(stat(Temp, &st) == -1)
+        return 0;
+    }
+    *Try = Restore;
+    Try = FindCloserPointer(strchr(Try+1, '/'), strchr(Try+1, '\\'));
+  }
+  return 1;
+}
+
 ClientAddon *AddonForScript(HSQUIRRELVM v) {
   return (ClientAddon*)sq_getforeignptr(v);
 }
@@ -873,6 +904,25 @@ SQInteger Sq_TabCreate(HSQUIRRELVM v) {
   StartEvent("tab create", "", ContextForTab(NewPtr, Buffer), FirstEventType, 0);
   sq_pushstring(v, Buffer, -1);
   ChannelTabsIsDirty();
+  if(GetConfigInt(1, "ChatView/LoggingOn") && !(Flags & TAB_NOLOGGING)) {
+    const char *LogFormat = GetConfigStr("%n\%c.log", "ChatView/LoggingPath");
+    char LogPath1[260];
+    char LogPath2[260];
+
+    // make the log filename
+    const char *ReplaceWith[2] = {NewPtr->Name, NewPtr->Name};
+    if(NewPtr->Parent)
+      ReplaceWith[0] = NewPtr->Parent->Name;
+    TextInterpolate(LogPath1, LogFormat, '%', "nc", ReplaceWith);
+    time_t now = time(NULL);
+    struct tm *TimeInfo = localtime(&now);
+    strftime(LogPath2, sizeof(LogPath2), LogPath1, TimeInfo);
+
+    snprintf(LogPath1, sizeof(LogPath1), "%slogs/%s", PrefPath, LogPath2);
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Opening log file %s", LogPath1);
+    if(PathIsSafe(LogPath2) && CreateDirectoriesForPath(LogPath1))
+      NewPtr->LogFile = fopen(LogPath1, "wb");
+  }
   SDL_UnlockMutex(LockTabs);
   return 1;
 
@@ -884,6 +934,8 @@ void CleanTab(ClientTab *Tab) {
   for(int i=0;i<Tab->NumMessages;i++)
     if(Tab->Messages[i].RightExtend)
       free(Tab->Messages[i].RightExtend);
+  if(Tab->LogFile)
+    fclose(Tab->LogFile);
 }
 SQInteger Sq_TabRemove(HSQUIRRELVM v) {
 // something is causing this to crash, when used on a connected server
@@ -1196,6 +1248,19 @@ int SqX_AddMessage(const char *Message, ClientTab *Tab, time_t Time, int Flags) 
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "%s", Message);
     return -1;
   }
+  if(!Time)
+    Time = time(NULL);
+
+  if(Tab->LogFile && !(Flags & (CMF_TEMP_ALERT | CMF_NO_LOGGING))) {
+    const char *TimestampFormat = GetConfigStr("%b %d %H:%M:%S ", "ChatView/TimeStampLogFormat");
+    struct tm *TimeInfo = localtime(&Time);
+    char TimestampBuffer[80];
+    strftime(TimestampBuffer, sizeof(TimestampBuffer), TimestampFormat, TimeInfo);
+    fprintf(Tab->LogFile, "%s%s\r\n", TimestampBuffer, Message);
+  }
+  if(Flags & CMF_LOG_ONLY)
+    return 1;
+
   SDL_LockMutex(LockTabs);
   if(!Tab->Messages) { // need to allocate channel message buffer?
     int ArraySize = Tab->MessageBufferSize;
@@ -1258,8 +1323,6 @@ SQInteger Sq_AddMessage(HSQUIRRELVM v) {
   sq_getstring(v, 2, &Message);
   sq_getstring(v, 3, &Context);
   sq_getinteger(v, 4, &Time);
-  if(!Time)
-    Time = time(NULL);
   sq_getinteger(v, 5, &Flags);
   SDL_LockMutex(LockTabs);
   ClientTab *Tab = FindTab(Context);
@@ -1486,10 +1549,8 @@ void UnloadAddonHooks(ClientAddon *Addon, EventType **FirstType) {
         while(Hook) {
           EventHook *Next = Hook->Next;
           if( (Addon->Script && Addon->Script == Hook->Script)
-            ||(!Addon->Script && Hook->XChatHook && Hook->XChatHook->XChatPlugin->Addon == Addon)) {
-//            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "yes, removing %s at %i", TypeSearch->Type, Priority);
+            ||(!Addon->Script && Hook->XChatHook && Hook->XChatHook->XChatPlugin->Addon == Addon))
             DelEventHookInList(&TypeSearch->Hooks[Priority], Hook);
-          }
           Hook = Next;
         }
       }
