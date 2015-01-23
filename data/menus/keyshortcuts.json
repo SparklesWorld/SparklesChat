@@ -1,0 +1,30 @@
+{
+  "All": {
+    "^c": "client copy",
+    "^v": "client paste",
+    "^x": "client cut",
+    "^a": "client selectall"
+  },
+
+  "IRC": {
+    "^b": "client inputaddchar 0x02",
+    "^i": "client inputaddchar 0x1d",
+    "^u": "client inputaddchar 0x1f",
+    "^k": "client inputaddchar 0x03",
+    "^o": "client inputaddchar 0x0f"
+  },
+
+  "F-Chat": {
+    "^b": "client inputaddtext [b]@[/b]",
+    "^i": "client inputaddtext [i]@[/i]",
+    "^u": "client inputaddtext [u]@[/u]",
+    "^s": "client inputaddtext [s]@[/s]",
+    "^l": "client inputaddtext [url=@][/url]",
+    "^o": "client inputaddtext [icon]@[/icon]",
+    "^O": "client inputaddtext [user]@[/user]",
+    "^n": "client inputaddtext [noparse]@[/noparse]",
+    "^k": "client inputaddtext [channel]@[/channel]",
+    "^K": "client inputaddtext [session]@[/session]",
+    "^j": "client inputaddtext [color]@[/color]"
+  }
+}

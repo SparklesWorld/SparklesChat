@@ -220,7 +220,7 @@ function HandleServerMessage(S, Command, P, Raw) {
   }
   if(Command != "NLN" && Command != "FLN" && Command != "STA") {
     if(api.TabExists(S.RawTab) && Raw.len() < 700)
-      api.AddMessage(">>\t"+Raw, S.RawTab, 0, 0);
+      api.AddMessage(">>\t"+Command+" "+Raw, S.RawTab, 0, 0);
     print("Command received: "+Command);//+" "+api.ToJSON(P));
   }
 //  api.Event("fchat raw", {"Command":Command, "Info":Raw}, S.Tab);

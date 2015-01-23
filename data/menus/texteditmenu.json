@@ -40,6 +40,7 @@
     "Subscript":"client inputaddtext [sub]@[/sub]",
     "Link":"client inputaddtext [url=@][/url]",
     "Icon":"client inputaddtext [icon]@[/icon]",
+    "User":"client inputaddtext [user]@[/user]",
     "Color": {
       "white 16,16##":"client inputaddtext [color=white]@[/color]",
       "black 17,17##":"client inputaddtext [color=black]@[/color]",
