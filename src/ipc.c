@@ -35,9 +35,8 @@ void IPC_Free(IPC_Holder *IPC) {
 }
 
 void IPC_Write(IPC_Holder *IPC, const char *Text) {
-  int Length = strlen(Text)+1;
-  write(IPC->Pipe[PIPE_WRITE], &Length, sizeof(int));
-  write(IPC->Pipe[PIPE_WRITE], Text, Length);
+  char *Clone = StringClone(Text);
+  write(IPC->Pipe[PIPE_WRITE], &Clone, sizeof(char *));
   SDL_AtomicAdd(&IPC->Ready, 1);
 }
 
@@ -65,14 +64,8 @@ char *IPC_Read(int Timeout, int Count, ...) {
   for(int Tries = 0; Tries < 10; Tries++) {
     for(i=0; i<Count; i++)
       if(SDL_AtomicGet(&IPC[i]->Ready)) {
-        int Length;
-        read(IPC[i]->Pipe[PIPE_READ], &Length, sizeof(int));
-        if(Length > 0x10000) {
-          SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "bad message length: %i", Length);
-          exit(0);
-        }
-        char *String = (char*)malloc(Length * sizeof(char));
-        read(IPC[i]->Pipe[PIPE_READ], String, Length);
+        char *String;
+        read(IPC[i]->Pipe[PIPE_READ], &String, sizeof(char *));
         SDL_AtomicAdd(&IPC[i]->Ready, -1);
         return String;
       }
