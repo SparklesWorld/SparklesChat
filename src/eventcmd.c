@@ -64,6 +64,8 @@ int StartEvent(const char *TypeName, const char *EventInfo, const char *EventCon
                   Handled = 1;
                   break;
                 case ER_DELETE:
+                  RecurseLevel--;
+                  SDL_UnlockMutex(LockTabs);
                   return 1;
               }
             } else if(OT_STRING == sq_gettype(Hook->Script,-1)) {
@@ -107,6 +109,8 @@ int StartEvent(const char *TypeName, const char *EventInfo, const char *EventCon
             default:
               break;
             case XCHAT_EAT_ALL:
+              RecurseLevel--;
+              SDL_UnlockMutex(LockTabs);
               return 1;
           }
         }
@@ -360,7 +364,7 @@ int RunEventThread(void *Data) {
     }
     char *Command;
     do {
-      Command = IPC_Read(EventQueue[IPC_IN], 100);
+      Command = IPC_Read(100, 2, &SocketToEvent, &MainToEvent);
       if(Command) {
 //        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "event: %s", Command);
         if(Command[0] == 'C' || Command[0]=='E') { // command or event
@@ -393,6 +397,6 @@ int RunEventThread(void *Data) {
 
 void QueueEvent(const char *TypeName, const char *EventInfo, const char *EventContext, char EventType) {
 //  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "queueing an event");
-  IPC_WriteF(EventQueue[IPC_IN], "%c%s\xff%s\xff%s", EventType, TypeName, EventContext, EventInfo);
+  IPC_WriteF(&MainToEvent, "%c%s\xff%s\xff%s", EventType, TypeName, EventContext, EventInfo);
 //  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "queued the event");
 }

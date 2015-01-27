@@ -590,7 +590,7 @@ SQInteger Sq_NetSend(HSQUIRRELVM v) {
   SQInteger Id; const SQChar *Text;
   sq_getinteger(v, 2, &Id);
   sq_getstring(v, 3, &Text);
-  IPC_WriteF(SocketQueue[0], "M%i %s", Id, Text);
+  IPC_WriteF(&EventToSocket, "M%i %s", Id, Text);
   return 0;
 }
 SqSocket *FindSockById(int Id);
@@ -607,7 +607,7 @@ SQInteger Sq_NetClose(HSQUIRRELVM v) {
     Sock->Flags &= (SQSOCK_WEBSOCKET|SQSOCK_SSL|SQSOCK_NOT_LINED);
     *Sock->Buffer = 0;
     SDL_UnlockMutex(LockSockets);
-    IPC_WriteF(SocketQueue[0], "O%i", SockId);
+    IPC_WriteF(&EventToSocket, "O%i", SockId);
   } else {
     SDL_LockMutex(LockSockets);
     DeleteSocketById(Id);

@@ -788,14 +788,14 @@ int Spark_NetOpen(void (*Function) (int Socket, int Event, char *Data), const ch
   if(FirstSock)
     FirstSock->Prev = Socket;
   FirstSock = Socket;
-  IPC_WriteF(SocketQueue[0], "O%i", SockId); // open socket
+  IPC_WriteF(&EventToSocket, "O%i", SockId); // open socket
 
   SDL_UnlockMutex(LockSockets);
   return SockId++;
 }
 
 void Spark_NetSend(int Socket, const char *Text) {
-  IPC_WriteF(SocketQueue[0], "M%i %s", Socket, Text);
+  IPC_WriteF(&EventToSocket, "M%i %s", Socket, Text);
 }
 
 void Spark_NetClose(int Socket, int Reopen) {

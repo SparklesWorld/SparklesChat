@@ -25,8 +25,7 @@ int SqCurlRunning = 0;
 char *PrefPath = NULL;
 CURLM *MultiCurl;
 Uint32 MainThreadEvent;
-IPC_Queue *EventQueue[1];
-IPC_Queue *SocketQueue[1];
+IPC_Holder MainToEvent, SocketToEvent, EventToMain, EventToSocket;
 
 cJSON *MenuMain, *MenuChannel, *MenuUser, *MenuUserTab, *MenuTextEdit, *MainConfig, *PluginPref;
 
@@ -85,8 +84,11 @@ int main( int argc, char* args[] ) {
   if(!PluginPref)
     PluginPref = cJSON_CreateObject();
 
-  IPC_New(EventQueue, 16, 1);
-  IPC_New(SocketQueue, 16, 1);
+  IPC_New(&MainToEvent, 0x1000);
+  IPC_New(&EventToMain, 0x1000);
+  IPC_New(&SocketToEvent, 0x4000);
+  IPC_New(&EventToSocket, 0x2000);
+
   MainThreadEvent = SDL_RegisterEvents(1);
 
   freopen("CON", "w", stdout);
@@ -115,8 +117,10 @@ int main( int argc, char* args[] ) {
   (*EndGUI[GUIType])();
   SDL_WaitThread(EventThread, NULL);
   SDL_WaitThread(SocketThread, NULL);
-  IPC_Free(EventQueue, 1);
-  IPC_Free(SocketQueue, 1);
+  IPC_Free(&MainToEvent);
+  IPC_Free(&EventToMain);
+  IPC_Free(&SocketToEvent);
+  IPC_Free(&EventToSocket);
 
   cJSON_Delete(MenuMain);
   cJSON_Delete(MenuChannel);

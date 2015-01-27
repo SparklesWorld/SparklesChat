@@ -88,30 +88,20 @@ enum EventReturnValue {
   ER_BADSYNTAX, // bad command syntax
 };
 
-// fake pipes
-typedef struct IPC_Message {
-  SDL_atomic_t Used;
-  int Id;
-  char *Text;
-} IPC_Message;
+#define PIPE_READ  0
+#define PIPE_WRITE 1
 
-typedef struct IPC_Queue {
-  int Size;
-  SDL_atomic_t MakeId;
-  SDL_atomic_t UseId;
-  SDL_mutex *Mutex;
-  SDL_sem *Semaphore;
-  IPC_Message *Queue;
-  SDL_cond *Condition;
-} IPC_Queue;
+typedef struct IPC_Holder {
+  int Pipe[2];
+  SDL_atomic_t Ready;
+} IPC_Holder;
 
-#define IPC_IN  0
-#define IPC_OUT 1
-int IPC_New(IPC_Queue *Out[], int Size, int Queues);
-void IPC_Free(IPC_Queue *Holder[], int Queues);
-void IPC_Write(IPC_Queue *Queue, const char *Text);
-void IPC_WriteF(IPC_Queue *Queue, const char *format, ...);
-char *IPC_Read(IPC_Queue *Queue, int Timeout);
+void IPC_New(IPC_Holder *IPC, int Size);
+void IPC_Write(IPC_Holder *IPC, const char *Text);
+void IPC_WriteF(IPC_Holder *IPC, const char *format, ...);
+void IPC_Free(IPC_Holder *IPC);
+char *IPC_Read(int Timeout, int Count, ...);
+
 void QueueEvent(const char *TypeName, const char *EventInfo, const char *EventContext, char EventType);
 
 enum FontVersion {
@@ -555,8 +545,7 @@ extern CURLM *MultiCurl;
 extern int SqCurlRunning;
 extern char *PrefPath;
 extern SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets, *LockDialog;
-extern IPC_Queue *EventQueue[1];
-extern IPC_Queue *SocketQueue[1];
+extern IPC_Holder MainToEvent, SocketToEvent, EventToMain, EventToSocket;
 
 #define GUIPOS_INPUTBOX 1
 #define GUIPOS_YOURNAME 2
@@ -619,7 +608,6 @@ typedef struct SqSocket {
   int Flags, Id;
   BIO *Bio;
   SSL *Secure;
-  IPC_Queue *Queue[2];
   int BufferSize;
   char *Buffer;
 

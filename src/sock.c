@@ -67,7 +67,7 @@ void EndSock() {
 }
 
 void QueueSockEvent(SqSocket *Socket, int Event, const char *Text) {
-  IPC_WriteF(EventQueue[0], "S%i;%i:%s", Socket->Id, Event, Text);
+  IPC_WriteF(&SocketToEvent, "S%i;%i:%s", Socket->Id, Event, Text);
 }
 
 int CreateSqSock(HSQUIRRELVM v, HSQOBJECT Handler, const char *Host, int Flags) {
@@ -90,7 +90,7 @@ int CreateSqSock(HSQUIRRELVM v, HSQOBJECT Handler, const char *Host, int Flags) 
     FirstSock->Prev = Socket;
   sq_addref(v, &Handler);
   FirstSock = Socket;
-  IPC_WriteF(SocketQueue[0], "O%i", SockId); // open socket
+  IPC_WriteF(&EventToSocket, "O%i", SockId); // open socket
   return 1;
 }
 // see also Spark_NetOpen in plugin.c
@@ -106,6 +106,8 @@ void DeleteSocketById(int Id) {
       BIO_free(Sock->Bio);
       if(Sock->Websocket)
         wslay_event_context_free(Sock->Websocket);
+      if(Sock->Socket)
+        close(Sock->Socket);
       free(Sock->Buffer);
       free(Sock);
       SDL_UnlockMutex(LockTabs);
@@ -146,7 +148,7 @@ int RunSocketThread(void *Data) {
     SqSocket *Sock;
     // check for queue commands
     do {
-      Command = IPC_Read(SocketQueue[IPC_IN], 100);
+      Command = IPC_Read(100, 1, &EventToSocket);
       if(Command) {
 //        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "socket: %s", Command);
         switch(Command[0]) {

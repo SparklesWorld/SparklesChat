@@ -18,91 +18,65 @@
  */
 #include "chat.h"
 
-int IPC_New(IPC_Queue *Out[], int Size, int Queues) {
-  for(int i=0; i<Queues; i++) {
-    Out[i] = (IPC_Queue*)calloc(1,sizeof(IPC_Queue));
-    if(!Out[i])
-      return 0;
-    Out[i]->Size = Size;
-    Out[i]->Queue = (IPC_Message*)calloc(Size,sizeof(IPC_Message));
-    Out[i]->Semaphore = SDL_CreateSemaphore(Size);
-    Out[i]->Mutex = SDL_CreateMutex();
-    Out[i]->Condition = SDL_CreateCond();
-  }
-  return 1;
+void IPC_New(IPC_Holder *IPC, int Size) {
+#ifdef _WIN32
+  _pipe(IPC->Pipe, Size, 0);
+#else
+  pipe(IPC->Pipe);
+  //fcntl(Pipe[0], F_SETPIPE_SZ, Size);
+  //fcntl(Pipe[1], F_SETPIPE_SZ, Size);
+#endif
+  SDL_AtomicSet(&IPC->Ready, 0);
 }
 
-void IPC_Free(IPC_Queue *Holder[], int Queues) {
-  for(int i=0; i<Queues; i++) {
-    for(int j=0; j<Holder[i]->Size; j++)
-      if(SDL_AtomicGet(&Holder[i]->Queue[j].Used) && Holder[i]->Queue[j].Text)
-        free(Holder[i]->Queue[j].Text);
-    free(Holder[i]->Queue);
-    SDL_DestroyMutex(Holder[i]->Mutex);
-    SDL_DestroySemaphore(Holder[i]->Semaphore);
-    SDL_DestroyCond(Holder[i]->Condition);
-    free(Holder[i]);
-  }
+void IPC_Free(IPC_Holder *IPC) {
+  close(IPC->Pipe[0]);
+  close(IPC->Pipe[1]);
 }
 
-void IPC_Write(IPC_Queue *Queue, const char *Text) {
-  SDL_Delay(1); // remove later once I fix a race condition
-  SDL_LockMutex(Queue->Mutex);
-  SDL_Delay(1); // remove later once I fix a race condition
-  SDL_SemWait(Queue->Semaphore);
-  for(int i=0; i<Queue->Size; i++)
-    if(!SDL_AtomicGet(&Queue->Queue[i].Used)) {
-      SDL_AtomicSet(&Queue->Queue[i].Used, 1);
-      // write text
-      Queue->Queue[i].Text = (char*)malloc(strlen(Text)+1);
-      strcpy(Queue->Queue[i].Text, Text);
-      // update id
-      Queue->Queue[i].Id = SDL_AtomicGet(&Queue->MakeId);
-      SDL_AtomicAdd(&Queue->MakeId, 1);
-      SDL_AtomicSet(&Queue->Queue[i].Used, 2);
-      SDL_CondSignal(Queue->Condition);
-      SDL_UnlockMutex(Queue->Mutex);
-      return;
-    }
-  // we shouldn't be able to get here, but if we do, unlock stuff
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SHOULD NOT GET HERE");
-  SDL_SemPost(Queue->Semaphore);
-  SDL_UnlockMutex(Queue->Mutex);
+void IPC_Write(IPC_Holder *IPC, const char *Text) {
+  int Length = strlen(Text)+1;
+  write(IPC->Pipe[PIPE_WRITE], &Length, sizeof(int));
+  write(IPC->Pipe[PIPE_WRITE], Text, Length);
+  SDL_AtomicAdd(&IPC->Ready, 1);
 }
 
-void IPC_WriteF(IPC_Queue *Queue, const char *format, ...) {
+void IPC_WriteF(IPC_Holder *IPC, const char *format, ...) {
   va_list args;
   char *buf;
   va_start(args, format);
   buf = strdup_vprintf(format, args);
   va_end(args);
-  IPC_Write(Queue, buf);
+  IPC_Write(IPC, buf);
   free(buf);
 }
 
-char *IPC_Read(IPC_Queue *Queue, int Timeout) {
-  SDL_LockMutex(Queue->Mutex);
-  int Size = Queue->Size;
-  int MakeId = SDL_AtomicGet(&Queue->MakeId);
-  int UseId = SDL_AtomicGet(&Queue->UseId);
-  if(MakeId == UseId) {
-    int Result = SDL_CondWaitTimeout(Queue->Condition, Queue->Mutex, Timeout);
-    if(Result != 0) // zero means success
-      goto Fail;
-  }
-  if(UseId < MakeId) { // are there any items to read?
-    for(int i = 0; i < Size; i++)
-      if(SDL_AtomicGet(&Queue->Queue[i].Used) && (Queue->Queue[i].Id == UseId)) {
-        SDL_AtomicAdd(&Queue->UseId, 1);
-        char *Text = Queue->Queue[i].Text;
-        SDL_AtomicSet(&Queue->Queue[i].Used, 0);
-        SDL_SemPost(Queue->Semaphore);
-        SDL_UnlockMutex(Queue->Mutex);
-        return Text;
-      }
-  }
+char *IPC_Read(int Timeout, int Count, ...) {
+  int i;
+  IPC_Holder *IPC[Count];
 
-Fail:
-  SDL_UnlockMutex(Queue->Mutex);
+  va_list ap;
+  va_start(ap, Count);
+  for(i=0; i<Count; i++)
+    IPC[i] = va_arg(ap, IPC_Holder*);
+  va_end(ap);
+
+  int Delay = Timeout / 10;
+  for(int Tries = 0; Tries < 10; Tries++) {
+    for(i=0; i<Count; i++)
+      if(SDL_AtomicGet(&IPC[i]->Ready)) {
+        int Length;
+        read(IPC[i]->Pipe[PIPE_READ], &Length, sizeof(int));
+        if(Length > 0x10000) {
+          SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "bad message length: %i", Length);
+          exit(0);
+        }
+        char *String = (char*)malloc(Length * sizeof(char));
+        read(IPC[i]->Pipe[PIPE_READ], String, Length);
+        SDL_AtomicAdd(&IPC[i]->Ready, -1);
+        return String;
+      }
+    SDL_Delay(Delay);
+  }
   return NULL;
 }
