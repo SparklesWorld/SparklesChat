@@ -921,7 +921,7 @@ SQInteger Sq_TabRemove(HSQUIRRELVM v) {
     else if(Focus->Next) Focus = Focus->Next;
     else if(Focus->Parent) Focus = Focus->Parent;
     // otherwise we're screwed
-    MainThreadRequest(MTR_GUI_COMMAND, StringClone(ContextForTab(Focus, Buffer)), StringClone("focus"));
+    MainThreadRequest(MTR_GUI_COMMAND, strdup(ContextForTab(Focus, Buffer)), strdup("focus"));
   }
 
   if(Tab->Connection) {
@@ -1279,7 +1279,7 @@ int SqX_AddMessage(const char *Message, ClientTab *Tab, time_t Time, int Flags) 
   if(Tab->UndrawnLines == 1) {
     char Buffer[CONTEXT_BUF_SIZE];
     ContextForTab(Tab, Buffer);
-    MainThreadRequest(MTR_INFO_ADDED, StringClone(Buffer), NULL);
+    MainThreadRequest(MTR_INFO_ADDED, strdup(Buffer), NULL);
   }
   SDL_UnlockMutex(LockTabs);
   return CurMessageId++;

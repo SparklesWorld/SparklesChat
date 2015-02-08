@@ -392,13 +392,6 @@ char *FindCloserPointer(char *A, char *B) {
   return B;
 }
 
-char *StringClone(const char *CloneMe) {
-  char *Out = (char*)malloc(strlen(CloneMe)+1);
-  if(!Out) return NULL;
-  strcpy(Out, CloneMe);
-  return Out;
-}
-
 int WildMatch(const char *TestMe, const char *Wild) {
   char NewWild[strlen(Wild)+1];
   char NewTest[strlen(TestMe)+1];

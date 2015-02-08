@@ -91,8 +91,14 @@ enum EventReturnValue {
 #define PIPE_READ  0
 #define PIPE_WRITE 1
 
+typedef struct IPC_Message {
+  char *Data;
+  struct IPC_Message *Next;
+} IPC_Message;
+
 typedef struct IPC_Holder {
-  int Pipe[2];
+  IPC_Message *Message;
+  SDL_mutex *Lock;
   SDL_atomic_t Ready;
 } IPC_Holder;
 
@@ -468,7 +474,6 @@ int SimulateWordWrap(FontSet *Fonts, RenderTextMode *Mode, const char *Text);
 __attribute__ ((hot)) const char *ConvertBBCode(char *Output, const char *Input, int Flags);
 ClientConnection *ConnectionForTab(ClientTab *Tab);
 ClientAddon *AddonForScript(HSQUIRRELVM v);
-char *StringClone(const char *CloneMe);
 ClientTab *GetFocusedTab();
 void TextInterpolate(char *Out, const char *In, char Prefix, const char *ReplaceThis, const char *ReplaceWith[]);
 char *FindCloserPointer(char *A, char *B);

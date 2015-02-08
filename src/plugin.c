@@ -40,7 +40,7 @@ xchat_hook *MakeXChatHook(xchat_plugin *ph, EventHook *EHook, const char *EventN
   EHook->XChatHook = Hook;
   Hook->Hook = EHook;
   Hook->XChatPlugin = ph;
-  Hook->EventName = StringClone(EventName);
+  Hook->EventName = strdup(EventName);
   Hook->HookType = Type;
   Hook->Userdata = Userdata;
   return Hook;
@@ -843,7 +843,7 @@ sparkles_plugin BaseSparklesPlugin = {
   Spark_CurlGet,
   Spark_CurlPost,
   Spark_ListSkipTo,
-  StringClone,
+  strdup,
   Spark_NetOpen,
   Spark_NetSend,
   Spark_NetClose,

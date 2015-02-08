@@ -252,34 +252,34 @@ int NativeCommand(const char *Command, const char *Args, const char *Context) {
 
   if(!strcasecmp(Command, "client")) {
     if(!strcasecmp(Word[0], "cut")) {
-      MainThreadRequest(MTR_EDIT_CUT, StringClone(Context), NULL);
+      MainThreadRequest(MTR_EDIT_CUT, strdup(Context), NULL);
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "copy")) {
-      MainThreadRequest(MTR_EDIT_COPY, StringClone(Context), NULL);
+      MainThreadRequest(MTR_EDIT_COPY, strdup(Context), NULL);
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "paste")) {
-      MainThreadRequest(MTR_EDIT_PASTE, StringClone(Context), NULL);
+      MainThreadRequest(MTR_EDIT_PASTE, strdup(Context), NULL);
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "delete")) {
-      MainThreadRequest(MTR_EDIT_PASTE, StringClone(Context), NULL);
+      MainThreadRequest(MTR_EDIT_PASTE, strdup(Context), NULL);
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "selectall")) {
-      MainThreadRequest(MTR_EDIT_SELECT_ALL, StringClone(Context), NULL);
+      MainThreadRequest(MTR_EDIT_SELECT_ALL, strdup(Context), NULL);
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "inputaddchar")) {
-      MainThreadRequest(MTR_EDIT_INPUT_CHAR, StringClone(Context), StringClone(WordEol[1]));
+      MainThreadRequest(MTR_EDIT_INPUT_CHAR, strdup(Context), strdup(WordEol[1]));
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "inputaddtext")) {
-      MainThreadRequest(MTR_EDIT_INPUT_TEXT, StringClone(Context), StringClone(WordEol[1]));
+      MainThreadRequest(MTR_EDIT_INPUT_TEXT, strdup(Context), strdup(WordEol[1]));
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "settext")) {
-      MainThreadRequest(MTR_EDIT_SET_TEXT, StringClone(Context), StringClone(WordEol[1]));
+      MainThreadRequest(MTR_EDIT_SET_TEXT, strdup(Context), strdup(WordEol[1]));
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "appendtext")) {
-      MainThreadRequest(MTR_EDIT_APPEND_TEXT, StringClone(Context), StringClone(WordEol[1]));
+      MainThreadRequest(MTR_EDIT_APPEND_TEXT, strdup(Context), strdup(WordEol[1]));
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "setcursor")) {
-      MainThreadRequest(MTR_EDIT_SET_CURSOR, StringClone(Context), StringClone(WordEol[1]));
+      MainThreadRequest(MTR_EDIT_SET_CURSOR, strdup(Context), strdup(WordEol[1]));
       return ER_HANDLED;
     } else if(!strcasecmp(Word[0], "url")) {
       URLOpen(WordEol[1]);
@@ -330,7 +330,7 @@ int NativeCommand(const char *Command, const char *Args, const char *Context) {
       UnloadAddon(Addon, &FirstAddon, 1);
     return ER_HANDLED;
   } else if(!strcasecmp(Command, "gui")) {
-    MainThreadRequest(MTR_GUI_COMMAND, StringClone(Context), StringClone(WordEol[0]));
+    MainThreadRequest(MTR_GUI_COMMAND, strdup(Context), strdup(WordEol[0]));
     return ER_HANDLED;
   }
   return ER_NORMAL;
