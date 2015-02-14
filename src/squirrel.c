@@ -595,24 +595,10 @@ SQInteger Sq_NetSend(HSQUIRRELVM v) {
 }
 SqSocket *FindSockById(int Id);
 
-void DeleteSocketById(int Id);
 SQInteger Sq_NetClose(HSQUIRRELVM v) {
-  SQInteger Id; SQBool Reopen;
+  SQInteger Id;
   sq_getinteger(v, 2, &Id);
-  sq_getbool(v, 3, &Reopen);
-  if(Reopen) {
-    SDL_LockMutex(LockSockets);
-    SqSocket *Sock = FindSockById(Id);
-    if(!Sock) return 0;
-    Sock->Flags &= (SQSOCK_WEBSOCKET|SQSOCK_SSL|SQSOCK_NOT_LINED);
-    *Sock->Buffer = 0;
-    SDL_UnlockMutex(LockSockets);
-    IPC_WriteF(&EventToSocket, "O%i", SockId);
-  } else {
-    SDL_LockMutex(LockSockets);
-    DeleteSocketById(Id);
-    SDL_UnlockMutex(LockSockets);
-  }
+  IPC_WriteF(&EventToSocket, "C%i", Id);
   return 0;
 }
 
@@ -1045,6 +1031,15 @@ SQInteger Sq_TabGetInfo(HSQUIRRELVM v) {
     else
       sq_pushstring(v, Tab->Name, -1);
     return 1;
+  } else if(!strcasecmp(Info, "ServerContext")) {
+    if(Tab->Parent)
+      sq_pushstring(v, ContextForTab(Tab->Parent, Buffer), -1);
+    else
+      sq_pushstring(v, ContextForTab(Tab, Buffer), -1);
+    return 1;
+  } else if(!strcasecmp(Info, "Context")) {
+    sq_pushstring(v, ContextForTab(Tab, Buffer), -1);
+    return 1;
   } else if(!strcasecmp(Info, "Nick")) {
     if(Connection)
       sq_pushstring(v, Connection->YourName, -1);
@@ -1390,7 +1385,7 @@ HSQUIRRELVM Sq_Open(const char *File) {
   Sq_RegisterFunc(v,   Sq_URLEncode,      "URLEncode",      1, "s");
   Sq_RegisterFunc(v,   Sq_NetOpen,        "NetOpen",        3, "css");
   Sq_RegisterFunc(v,   Sq_NetSend,        "NetSend",        2, "is");
-  Sq_RegisterFunc(v,   Sq_NetClose,       "NetClose",       2, "ib");
+  Sq_RegisterFunc(v,   Sq_NetClose,       "NetClose",       1, "i");
   Sq_RegisterFunc(v,   Sq_Interpolate,    "Interpolate",    3, "ssa");
   Sq_RegisterFunc(v,   Sq_GetTicks,       "GetTicks",       0, "");
   sq_pop(v,1); // pop api table

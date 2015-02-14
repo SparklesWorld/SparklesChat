@@ -84,17 +84,24 @@ api.TabRemove(Name)
 Removes a tab named Name.
 
 api.TabSetFlags(Name, Flags)
-Sets tab Name's flags to Flags.
+api.TabAddFlags(Name, Flags)
+api.TabRemoveFlags(Name, Flags)
+Sets tab Name's flags to Flags, or adds or removes flags.
 
 api.TabGetFlags(Name)
 Returns tab Name's flags.
+
+api.TabHasFlags(Name, Flag)
+Returns true if tab has all of the flags in Flags.
 
 api.TabGetInfo(Name, Info)
 Can return different information about a tab:
 List: Returns a list of networks if Name is "". If it's a network, it lists the tabs inside it. If it's a channel, it lists users.
 Channel: Tab's name.
+Context: Tab's context.
 Icon: Tab's icon.
 Server: Name of the server the tab is on, regardless of if it's a server or channel tab.
+ServerContext: Context for the server tab the tab belongs to.
 Nick: User's nick on the given tab.
 Protocol: Name of the protocol used for the given tab.
 Ticket: Ticket associated with a server.
@@ -112,6 +119,11 @@ Sets a tab color to Color.
 Will only go from a lower importance color to a higher importance color, in this order (least to greatest):
 COLOR_NORM, COLOR_DATA, COLOR_TALK, COLOR_NAME
 This is so that a hilight happens, and someone talks or an event happens the hilight sticks.
+
+api.MakeContext(Server, Channel)
+api.MakeContextExists(Server, Channel)
+Makes a context for a tab named Channel on a tab named Server and returns it.
+The second function checks if the result of that exists.
 
 api.AddMessage(Message, Context, Time, Flags)
 Creates a new message in Context with the contents of Message and time and message flags set to Time and Flags.
@@ -178,7 +190,7 @@ Takes a table of different form parts, and makes them into a form suitable for a
 
 api.NetOpen(Function, Host, Type)
 api.NetSend(Socket, Text)
-api.NetClose(Socket, Reopen)
+api.NetClose(Socket)
 Open a socket, send text on a socket or close a socket. NetOpen returns and integer that can be passed to NetSend and NetClose.
 Host is a URL in the format host:port
 Function is called with (Socket, Event, Text) when an event happens on the socket.

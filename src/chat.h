@@ -102,7 +102,7 @@ typedef struct IPC_Holder {
   SDL_atomic_t Ready;
 } IPC_Holder;
 
-void IPC_New(IPC_Holder *IPC, int Size);
+void IPC_New(IPC_Holder *IPC);
 void IPC_Write(IPC_Holder *IPC, const char *Text);
 void IPC_WriteF(IPC_Holder *IPC, const char *format, ...);
 void IPC_Free(IPC_Holder *IPC);

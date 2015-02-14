@@ -101,6 +101,8 @@ void DeleteSocketById(int Id) {
     if(Sock->Id == Id) {
       if(FirstSock == Sock)
         FirstSock = Sock->Next;
+      if(Sock->Prev)
+        Sock->Prev->Next = Sock->Next;
       if(Sock->Script)
         sq_release(Sock->Script, &Sock->Function.Squirrel);
       BIO_free(Sock->Bio);
@@ -110,10 +112,10 @@ void DeleteSocketById(int Id) {
         close(Sock->Socket);
       free(Sock->Buffer);
       free(Sock);
-      SDL_UnlockMutex(LockTabs);
+      SDL_UnlockMutex(LockSockets);
       return;
     }
-  SDL_UnlockMutex(LockTabs);
+  SDL_UnlockMutex(LockSockets);
 }
 
 SqSocket *FindSockById(int Id) {
@@ -152,6 +154,9 @@ int RunSocketThread(void *Data) {
       if(Command) {
 //        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "socket: %s", Command);
         switch(Command[0]) {
+          case 'C': // close socket
+            DeleteSocketById(strtol(Command+1, NULL, 10));
+            break;
           case 'O': // open new socket
             Sock = FindSockById(strtol(Command+1, NULL, 10));
             Sock->Bio = BIO_new_connect(Sock->Hostname);

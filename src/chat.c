@@ -54,6 +54,7 @@ int main( int argc, char* args[] ) {
     printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
     return 0;
   }
+
   srand(time(NULL));
   SDL_SetHint("SDL_HINT_VIDEO_ALLOW_SCREENSAVER", "1");
   InitSock();
@@ -84,10 +85,10 @@ int main( int argc, char* args[] ) {
   if(!PluginPref)
     PluginPref = cJSON_CreateObject();
 
-  IPC_New(&MainToEvent, 0x1000);
-  IPC_New(&EventToMain, 0x1000);
-  IPC_New(&SocketToEvent, 0x4000);
-  IPC_New(&EventToSocket, 0x2000);
+  IPC_New(&MainToEvent);
+  IPC_New(&EventToMain);
+  IPC_New(&SocketToEvent);
+  IPC_New(&EventToSocket);
 
   MainThreadEvent = SDL_RegisterEvents(1);
 

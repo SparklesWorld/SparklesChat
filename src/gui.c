@@ -1530,6 +1530,10 @@ int Widget_ChannelTabs(int msg, struct GUIDialog *d, GUIState *s) {
           }
         }
         RenderSimpleText(Renderer, &ChatFont, StartDrawX, StartDrawY, Color<<2, Tab->Name);
+        if(Tab->Flags & TAB_NOTINCHAN) { // strikeout if not in the channel
+          SDL_SetRenderDrawColor(Renderer, IRCColors[IRCCOLOR_FG].r, IRCColors[IRCCOLOR_FG].g, IRCColors[IRCCOLOR_FG].b, 255);
+          SDL_RenderDrawLine(Renderer, StartDrawX, StartDrawY+(ChatFont.Height)/2, d->w, StartDrawY+(ChatFont.Height)/2);
+        }
         if(Tab == SelectTab) {
           SDL_SetRenderDrawColor(Renderer, IRCColors[IRCCOLOR_SELECT].r, IRCColors[IRCCOLOR_SELECT].g, IRCColors[IRCCOLOR_SELECT].b, 255);
           SDL_Rect Select = {d->x+1, StartDrawY, d->x+d->w-3, RowHeight};

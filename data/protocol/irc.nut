@@ -16,6 +16,11 @@ class Server {
   Tab = "";
   RawTab = "";
   Channels = [];
+  Connected = false;
+  TryReconnect = false;
+
+  UserName = ""; // for reconnects
+  RealName = "";
   function Send(Text) {
     api.NetSend(this.Socket, Text+"\r\n")
   }
@@ -123,6 +128,8 @@ function PartCmd(T, P, C) {
 }
 function QuitCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
+  S.TryReconnect = false;
+  S.Connected = false;
   S.Send("quit :"+P);
   return EventReturn.HANDLED;
 }
@@ -131,9 +138,28 @@ function NickCmd(T, P, C) {
   S.Send("nick :"+P);
   return EventReturn.HANDLED;
 }
+function MarkNotInChannels(C) {
+  local ServerTab = api.TabGetInfo(C, "ServerContext");
+  api.TabAddFlags(ServerTab, TabFlags.NOTINCHAN);
+  foreach(Channel in api.TabGetInfo(ServerTab, "List"))
+    if(api.TabHasFlags(Channel, TabFlags.CHANNEL))
+      api.TabAddFlags(Channel, TabFlags.NOTINCHAN);
+}
 function ReconnectCmd(T, P, C) {
-  local S = Sockets[api.TabGetInfo(C, "Socket")];
-  api.NetClose(S.Socket, true);
+  MarkNotInChannels(C);
+  local OldSockId = api.TabGetInfo(C, "Socket");
+  local OldSock = Sockets[OldSockId];
+  local Host = OldSock.Host;
+  api.NetClose(OldSockId);
+
+  // open a new one
+  local NewSockId = api.NetOpen(IRC_Socket, Host, "");
+  OldSock.Socket = NewSockId;
+  api.TabSetInfo(OldSock.Tab, "Socket", NewSockId.tostring());
+ 
+  Sockets[NewSockId] <- OldSock;
+  delete Sockets[OldSockId];
+
   return EventReturn.HANDLED;
 }
 function RawCmd(T, P, C) {
@@ -143,9 +169,14 @@ function RawCmd(T, P, C) {
 }
 function QueryCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  if(!api.TabExists(S.Tab+"/"+P))
-    api.TabCreate(P, S.Tab, TabFlags.QUERY)
+  if(!api.MakeContextExists(S.Tab, P))
+    api.TabCreate(P, S.Tab, TabFlags.QUERY);
   return EventReturn.HANDLED;
+}
+function CloseCmd(T, P, C) {
+  if(api.TabHasFlags(C, TabFlags.SERVER))
+    api.Command("quit", "", C);
+  return EventReturn.NORMAL;
 }
 
 api.AddCommandHook("say",   SayCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
@@ -153,12 +184,14 @@ api.AddCommandHook("me",    MeCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("msg",   MsgCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("msg",   NoticeCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("join",  JoinCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
+api.AddCommandHook("part",  PartCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("quit",  QuitCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("quote", RawCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("query", QueryCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("whois", WhoisCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("nick",  NickCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("reconnect",  ReconnectCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
+api.AddCommandHook("close",  CloseCmd, Priority.HIGH|PROTOCOL_CMD, null, null);
 
 function IRC_Socket(Socket, Event, Text) {
   switch(Event) {
@@ -166,7 +199,17 @@ function IRC_Socket(Socket, Event, Text) {
       print("Can't connect: "+Text);
       break;
     case SockEvents.CONNECTED:
-      api.NetSend(Socket, "NICK SparklesChat\r\nUSER Sparkles 8 * :SparklesChat test\r\n")
+      local Server = Sockets[Socket];
+      Server.Connected = false; // not fully connected until you get the initial ping
+      local MyNick = "";
+      if(!Server.TryReconnect) {
+        MyNick = "SparklesChat"; // pull default from somewhere useful later
+        Server.UserName = "Sparkles";
+        Server.RealName = "SparklesChat user";
+      } else
+        MyNick = api.TabGetInfo(Server.Tab, "Nick");
+      api.NetSend(Socket, format("NICK %s\r\nUSER %s 8 * :%s\r\n", MyNick, Server.UserName, Server.RealName))
+      print("Connected");
       break;
     case SockEvents.NEW_DATA:
       local SplitRN = split(Text, "\r\n");
@@ -183,6 +226,19 @@ function IRC_Socket(Socket, Event, Text) {
       if(Split[0][0] == "PING") {
         print("PING!")
         api.NetSend(Socket, "PONG "+Split[0][1]+"\r\n");
+        if(!Server.Connected && Server.TryReconnect) {
+          // restore state; todo: restore /away if it was set
+          local ChannelList = "";
+          foreach(Channel in api.TabGetInfo(Server.Tab, "List"))
+            if(api.TabHasFlags(Channel, TabFlags.CHANNEL)) {
+              if(ChannelList != "")
+                ChannelList += ",";
+              ChannelList += api.TabGetInfo(Channel, "Channel");
+            }
+          api.Command("join", ChannelList, Server.Tab);
+        }
+        Server.Connected = true;
+        Server.TryReconnect = true;
         return;
       }
       Split[0].apply(FixColon);
@@ -200,12 +256,12 @@ function IRC_Socket(Socket, Event, Text) {
           local Destination = Split[0][2];
           local Text = Split[1][3];
           local Nick = HostParts[0];
-          local C = Tab+"/"+Destination;
+          local C = api.MakeContext(Tab,Destination);
           if(Destination == MyNick) {
-            if(!api.TabExists(Tab+"/"+Nick))
+            if(!api.MakeContextExists(Tab, Nick))
               C = api.TabCreate(Nick, Tab, TabFlags.QUERY)
             else
-              C = Tab+"/"+Nick;
+              C = api.MakeContext(Tab, Nick);
           }
           if((Text.len() >= 8) && (Text.slice(0, 7) == "\x0001ACTION")) {
             Text = Text.slice(8, -1);
@@ -220,21 +276,25 @@ function IRC_Socket(Socket, Event, Text) {
           local HostParts = SplitHost(Source);
           local ChannelName = Split[0][2];
           if(HostParts[0] == MyNick) {
-            Server.Channels.append(api.TabCreate(ChannelName, Tab, TabFlags.CHANNEL));
+            if(!api.MakeContextExists(Server.Tab,ChannelName))
+              Server.Channels.append(api.TabCreate(ChannelName, Tab, TabFlags.CHANNEL));
+            else
+              api.TabRemoveFlags(api.MakeContext(Server.Tab,ChannelName), TabFlags.NOTINCHAN);
           } else {
             local EParams = {"Nick":HostParts[0], "Host":HostParts[1]+"@"+HostParts[2]};
-            api.Event("channel join", EParams, Tab+"/"+ChannelName);
+            api.Event("channel join", EParams, api.MakeContext(Tab,ChannelName));
           }
           break;
         case "PART":
           local HostParts = SplitHost(Source);
           local ChannelName = Split[0][2];
           if(HostParts[0] == MyNick) {
-//            Server.Channels.append(api.TabCreate(ChannelName, Tab, TabFlags.CHANNEL));
+            // also remove from list
+            api.TabAddFlags(api.MakeContext(Server.Tab, ChannelName), TabFlags.NOTINCHAN);
           } else {
             local EParams = {"Nick":HostParts[0], "Host":HostParts[1]+"@"+HostParts[2]};
             if(Split[0].len() >= 3) EParams.Text <- Split[0][3];
-            api.Event("channel part", EParams, Tab+"/"+ChannelName);
+            api.Event("channel part", EParams, api.MakeContext(Tab, ChannelName));
           }
           break;
         case "NICK":
@@ -243,8 +303,8 @@ function IRC_Socket(Socket, Event, Text) {
           if(HostParts[0] == MyNick) {
             api.TabSetInfo(Tab, "Nick", NewNick);
           } else {
-            if(!api.TabExists(Tab+"/"+HostParts[0]))
-              api.TabSetInfo(Tab+"/"+HostParts[0], "Channel", NewNick);
+            if(!api.MakeContextExists(Tab, HostParts[0]))
+              api.TabSetInfo(api.MakeContext(Tab,HostParts[0]), "Channel", NewNick);
           }
           break;
         case "TOPIC":

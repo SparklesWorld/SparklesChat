@@ -130,6 +130,15 @@ api.TryLoadTable <- function (Filename) {
 api.SaveTable <- function (Filename, Contents) {
   api.SaveTextFile(Filename, api.ToJSON(Contents))
 }
+api.TabHasFlags <- function (Context, Flags) {
+  return (api.TabGetFlags(Context) & Flags) == Flags;
+}
+api.TabAddFlags <- function (Context, Flags) {
+  api.TabSetFlags(Context, api.TabGetFlags(Context) | Flags);
+}
+api.TabRemoveFlags <- function (Context, Flags) {
+  api.TabSetFlags(Context, api.TabGetFlags(Context) & ~Flags);
+}
 api.TabSetColor <- function (Context, Color) {
   local OldColor = api.TabGetFlags(Context)&TabFlags.COLOR_MASK;
   if(Color < OldColor) return;
@@ -168,4 +177,12 @@ api.Event <- function (T, P, C) {
     api._Event(T, api.ToJSON(P), C);
   else
     api._Event(T, P, C);
+}
+api.MakeContext <- function (Server, Channel) {
+  if(Channel == "" || !Channel)
+    return Server;
+  return Server+"/"+Channel;
+}
+api.MakeContextExists <- function (Server, Channel) {
+  return api.TabExists(api.MakeContext(Server, Channel));
 }

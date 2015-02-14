@@ -11,29 +11,38 @@ const ConfigPrefix = "Networks/FChat/";
 Config <- api.LoadTable("fchat");
 
 class Server {
-  Socket = 0;
-  Tab = "";
-  RawTab = "";
-  Character = "";
+  Socket = 0;            // socket id
+  Connected = false;     // currently connected to server
+  TryReconnect = false;  // try to reconnect if disconnected
+
+  MyStatus = 0;          // for restoring when reconnecting
+  MyStatusMessage = "";
+
+  Tab = "";              // server context
+  RawTab = "";           // server raw context
+  Character = "";        // character for this connection
+
   Friends = null;
   Bookmarks = null;
-  Channels = null; // indexed by whatever f-chat calls the channel
+  Channels = null;       // indexed by whatever f-chat calls the channel
   GlobalUsers = null;
   GlobalOps = null;
-  WatchList = null; // list of character to notify for
-  AutoJoinSaved = false;
-  Host = "";
-  Ticket = "";
-  Account = "";
-  Password = "";
+  WatchList = null;      // list of character to notify for, whether friends, bookmarks or neither
+  AutoJoinSaved = false; // automatically join saved channels?
+
+  Ticket = "";           // for site API stuff
+  Host = "";             // for reconnecting
+  Account = "";          // for reconnecting
+  Password = "";         // for reconnecting 
+
   IgnoreList = null;
-  Identified = false;
-  CHA = null;
-  ORS = null;
-  VAR = null;
-  TalkReady = false;
+  CHA = null;            // public channel list
+  ORS = null;            // private channel list
+  VAR = null;            // server variables
+
+  TalkTimer = null;
   TalkQueue = null;
-  JoinReady = false;
+  JoinTimer = null;
   JoinQueue = null;
   function Send(Command, Info) {
     if(Info == null) {
@@ -110,14 +119,6 @@ class ChannelStatus {
     RealName = Real;
   }
 };
-
-function MsgDelay(Server) {
-  if(!Server.MsgQueue.len())
-    return null;
-  local DoMessage = Server.MsgQueue.remove(0);
-  Server.Send(DoMessage);
-  return Server.VAR.msg_flood * 1000;
-}
 
 function ConnectGotTicket(Code, Data, Extra) {
   if(Code != 0) {
@@ -227,10 +228,17 @@ function HandleServerMessage(S, Command, P, Raw) {
   local Channel;
   switch(Command) {
     case "IDN": // identified
-      S.Identified = true;
+      S.Connected = true;
+      api.TabRemoveFlags(S.Tab, TabFlags.NOTINCHAN);
+      S.TryReconnect = true;
       S.Send("CHA", null);
       S.Send("ORS", null);
       api.Event("server connected", {"Nick":S.Character}, S.Tab);
+      if(S.MyStatus || (S.MyStatusMessage != ""))
+        S.Send("STA", {"status":Statuses[S.MyStatus], "statusmsg":S.MyStatusMessage});
+      foreach(key,val in S.Channels)
+        if(val.Joined)
+          api.Command("join", key, S.Tab);
       break;
     case "VAR": // change variable
       S.VAR[P.variable] <- P.value;
@@ -268,6 +276,10 @@ function HandleServerMessage(S, Command, P, Raw) {
     case "CKU": // channel kick
       Channel = S.Channels[P.channel];
       api.Event("channel kick", {"Nick":P.operator, "Target":P.character}, Channel.Tab);
+      if(P.character == S.Character) {
+        api.TabAddFlags(Channel.Tab, TabFlags.NOTINCHAN);
+        Channel.Joined = false;
+      }
       break;
     case "COA": // channel promote
       Channel = S.Channels[P.channel];
@@ -324,15 +336,18 @@ function HandleServerMessage(S, Command, P, Raw) {
       foreach(key,value in P.users)
         if(key=="identity")
           NewChannel.Users.append(value);
+      NewChannel.Joined = true
+      api.TabRemoveFlags(NewChannel.Tab, TabFlags.NOTINCHAN);
       break;
     case "KID": // reply to KIN
       break;
     case "LCH": // left channel
       // remove person from list
       Channel = S.Channels[P.channel];
-      if(P.character == S.Character)
+      if(P.character == S.Character) {
+        Channel.Joined = false;
         api.Event("you part", {"Nick":P.character}, Channel.Tab);
-      else
+      } else
         api.Event("channel part", {"Nick":P.character}, Channel.Tab);
       break;
     case "LIS": // list of all users
@@ -359,10 +374,10 @@ function HandleServerMessage(S, Command, P, Raw) {
       if(Command == "MSG")
         C = S.Channels[P.channel].Tab;
       else {
-        if(!api.TabExists(S.Tab+"/"+P.character))
+        if(!api.MakeContextExists(S.Tab, P.character))
           C = api.TabCreate(P.character, S.Tab, TabFlags.QUERY)
         else
-          C = S.Tab+"/"+P.character;
+          C = api.MakeContext(S.Tab, P.character);
       }
       P.message = api.ConvertBBCode(P.message);
       if(P.message.len() > 4 && (P.message.tolower().slice(0, 4) == "/me "))
@@ -445,6 +460,8 @@ function FChat_Socket(Socket, Event, Text) {
     case SockEvents.CONNECTED:
       print("Connected: "+Text);
       local TheServer = Sockets[Socket];
+      TheServer.Connected = false; // wait until IDN to know it's actually connected
+      api.TabAddFlags(TheServer.Tab, TabFlags.NOTINCHAN);
       TheServer.Send("IDN", {"method": "ticket", "account": TheServer.Account, "ticket": TheServer.Ticket, "character":  TheServer.Character, "cname": api.GetInfo("ClientName"), "cversion": AddonInfo.Version+" (on "+api.GetInfo("ClientVersion")+")" });
       break;
     case SockEvents.NEW_DATA:
@@ -472,16 +489,33 @@ function IdForChannelName(S, Name) {
       return value.RealName;
   return null;
 }
+function MsgDelayTimer(S) {
+  if(S.TalkQueue.len()) {
+    local Command = S.TalkQueue.pop();
+    S.Send(Command[0], Command[1]);
+    return (S.VAR.msg_flood * 2500).tointeger();
+  }
+  S.TalkTimer = null;
+  return false;
+}
 function SayMe(S, Text, C) {
+  function DoQueue(Command, Param) {
+    if(S.TalkTimer)
+      S.TalkQueue.push([Command, Param]);
+    else {
+      S.Send(Command, Param);
+      S.TalkTimer = api.AddTimer((S.VAR.msg_flood * 2500).tointeger(), MsgDelayTimer, S);
+    }
+  }
   local Channel = api.TabGetInfo(C, "channel");
-  if(api.TabGetFlags(C) & TabFlags.QUERY)
-    S.Send("PRI", {"recipient":Channel, "message":Text});
+  if(api.TabHasFlags(C, TabFlags.QUERY))
+    DoQueue("PRI", {"recipient":Channel, "message":Text});
   else
-    S.Send("MSG", {"channel":IdForChannelName(S, Channel), "message":Text});
+    DoQueue("MSG", {"channel":IdForChannelName(S, Channel), "message":Text});
 }
 function FailIfNotChannel(T, C) {
-  if(!(api.TabGetFlags(C) & TabFlags.CHANNEL)) {
-    api.TempMessage(T+" command is only usable in a channel", C);
+  if(!(api.TabHasFlags(C, TabFlags.CHANNEL))) {
+    api.TempMessage("\""T+"\" command is only usable in a channel", C);
     return 1;
   }
   return 0;
@@ -508,12 +542,39 @@ function RawCmd(T, P, C) {
 }
 function QueryCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  if(!api.TabExists(S.Tab+"/"+P))
+  if(!api.MakeContextExists(S.Tab, P))
     api.TabCreate(P, S.Tab, TabFlags.QUERY)
+  return EventReturn.HANDLED;
+}
+function MarkNotInChannels(C) {
+  local ServerTab = api.TabGetInfo(C, "ServerContext");
+  api.TabAddFlags(ServerTab, TabFlags.NOTINCHAN);
+  foreach(Channel in api.TabGetInfo(ServerTab, "List"))
+    if(api.TabHasFlags(Channel, TabFlags.CHANNEL))
+      api.TabAddFlags(Channel, TabFlags.NOTINCHAN);
+}
+function ReconnectCmd(T, P, C) {
+  MarkNotInChannels(C);
+  local OldSockId = api.TabGetInfo(C, "Socket");
+  local OldSock = Sockets[OldSockId];
+  local Host = OldSock.Host;
+  api.NetClose(OldSockId);
+
+  // open a new one
+  local NewSockId = api.NetOpen(FChat_Socket, Host, "websocket"); // todo: keep SSL if using SSL
+  OldSock.Socket = NewSockId;
+  api.TabSetInfo(OldSock.Tab, "Socket", NewSockId.tostring());
+ 
+  Sockets[NewSockId] <- OldSock;
+  delete Sockets[OldSockId];
+
   return EventReturn.HANDLED;
 }
 function QuitCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
+  MarkNotInChannels(C);
+  S.Connected = false;
+  S.TryReconnect = false;
   return EventReturn.HANDLED;
 }
 function PartCmd(T, P, C) {
@@ -521,12 +582,14 @@ function PartCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
   local Channel = IdForChannelName(S, api.TabGetInfo(C, "channel"));
   S.Send("LCH", {"channel":Channel});
+  api.TabAddFlags(C, TabFlags.NOTINCHAN);
+  S.Channels[Channel].Joined = false;
   return EventReturn.HANDLED;
 }
 function CloseCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  if(api.TabGetFlags(C) & TabFlags.CHANNEL)
-    S.Send("LCH", {"channel":IdForChannelName(S, api.TabGetInfo(C, "channel"))});
+  if(api.TabHasFlags(C, TabFlags.CHANNEL))
+    api.Command("part", "", C);
   return EventReturn.NORMAL;
 }
 function AdCmd(T, P, C) {
@@ -537,12 +600,21 @@ function AdCmd(T, P, C) {
 function StatusCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
   P = api.CmdParamSplit(P);
-  local Channel = IdForChannelName(S, api.TabGetInfo(C, "channel"));
-  S.Send("STA", {"status":P[0][0], "statusmsg":P[1][1]});
+  local StatusId = Statuses.find(P[0][0].tolower()); // allow only valid statuses
+  if(StatusId == null) {
+    api.TempMessage("Status \""+P[0][0]+"\" not valid", C);
+    return EventReturn.HANDLED;
+  }
+  local Message = "";
+  if(1 in P[1])
+    Message = P[1][1];
+  S.MyStatus = StatusId; // save status so it can be restored when reconnecting
+  S.MyStatusMessage = Message;
+  S.Send("STA", {"status":P[0][0], "statusmsg":Message});
   return EventReturn.HANDLED;
 }
 function AwayCmd(T, P, C) {
-  api.Command("status", "away "+P, C);
+  api.Command("status", "away"+P, C);
   return EventReturn.HANDLED;
 }
 function BackCmd(T, P, C) {
@@ -704,23 +776,43 @@ function FindChannelWildcard(S, P) {
       return Channel.name;
   return null;
 }
+
+function JoinDelayTimer(S) {
+  if(S.JoinQueue.len()) {
+    S.Send("JCH", {"channel":S.JoinQueue.pop()});   
+    return 200;
+  }
+  S.JoinTimer = null;
+  return false;
+}
 function JoinCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
+  local Channel = null;
   if(P.len() > 4 && P.slice(0,4) == "ADH-")
-    S.Send("JCH", {"channel":P});
+    Channel = P;
   else { // wildcard search
     local Find = FindChannelWildcard(S, P);
     if(Find)
-      S.Send("JCH", {"channel":Find});
-    else
-      api.TempMessage("Can't find channel "+P, C);
+      Channel = Find;
+  }
+
+  if(!Channel) {
+    api.TempMessage("Can't find channel \""+P+"\"", C);
+    return EventReturn.HANDLED;
+  }
+
+  if(S.JoinTimer)
+    S.JoinQueue.push(Channel);
+  else {
+    S.Send("JCH", {"channel":Channel});
+    S.JoinTimer = api.AddTimer(200, JoinDelayTimer, S);
   }
   return EventReturn.HANDLED;
 }
 function UsersCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  if(api.TabExists(S.Tab+"/!Users"))
-    api.TabRemove(S.Tab+"/!Users");
+  if(api.MakeContextExists(S.Tab,"/!Users"))
+    api.TabRemove(api.MakeContext(S.Tab,"/!Users"));
   C = api.TabCreate("!Users", S.Tab, TabFlags.NOLOGGING)
 
   if(P == "") P = "*";
@@ -733,8 +825,8 @@ function UsersCmd(T, P, C) {
 
 function ListCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  if(api.TabExists(S.Tab+"/!List"))
-    api.TabRemove(S.Tab+"/!List");
+  if(api.MakeContextExists(S.Tab,"/!List"))
+    api.TabRemove(api.MakeContext(S.Tab,"/!List"));
   C = api.TabCreate("!List", S.Tab, TabFlags.NOLOGGING)
 
   if(P == "") P = "*";
@@ -797,6 +889,8 @@ api.AddCommandHook("users",    UsersCmd, Priority.NORMAL|PROTOCOL_CMD, null, nul
 api.AddCommandHook("preview",  BBTestCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("bbtest",   BBTestCmd, Priority.NORMAL, null, null);
 api.AddCommandHook("fchataccount", FChatAccountCmd, Priority.NORMAL, null, null);
+api.AddCommandHook("reconnect",  ReconnectCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
+
 function SaveConfig(T, P, C) {
   api.SaveTable("fchat", Config);
   return EventReturn.NORMAL;

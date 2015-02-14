@@ -18,7 +18,7 @@
  */
 #include "chat.h"
 
-void IPC_New(IPC_Holder *IPC, int Size) {
+void IPC_New(IPC_Holder *IPC) {
   IPC->Message = NULL;
   IPC->Lock = SDL_CreateMutex();
   SDL_AtomicSet(&IPC->Ready, 0);
