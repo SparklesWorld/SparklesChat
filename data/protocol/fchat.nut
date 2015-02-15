@@ -816,8 +816,8 @@ function JoinCmd(T, P, C) {
 }
 function UsersCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  if(api.MakeContextExists(S.Tab,"/!Users"))
-    api.TabRemove(api.MakeContext(S.Tab,"/!Users"));
+  if(api.MakeContextExists(S.Tab,"!Users"))
+    api.TabRemove(api.MakeContext(S.Tab,"!Users"));
   C = api.TabCreate("!Users", S.Tab, TabFlags.NOLOGGING)
 
   if(P == "") P = "*";
@@ -830,8 +830,8 @@ function UsersCmd(T, P, C) {
 
 function ListCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  if(api.MakeContextExists(S.Tab,"/!List"))
-    api.TabRemove(api.MakeContext(S.Tab,"/!List"));
+  if(api.MakeContextExists(S.Tab,"!List"))
+    api.TabRemove(api.MakeContext(S.Tab,"!List"));
   C = api.TabCreate("!List", S.Tab, TabFlags.NOLOGGING)
 
   if(P == "") P = "*";
