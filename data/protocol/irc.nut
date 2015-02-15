@@ -2,7 +2,7 @@
 AddonInfo <- {
   "Name":"IRC"
   "Summary":"IRC protocol"
-  "Version":"0.01"
+  "Version":"0.70"
   "Author":"NovaSquirrel"
 };
 

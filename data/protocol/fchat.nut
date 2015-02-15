@@ -2,7 +2,7 @@
 AddonInfo <- {
   "Name":"F-Chat"
   "Summary":"F-Chat protocol"
-  "Version":"0.01"
+  "Version":"0.80"
   "Author":"NovaSquirrel"
 };
 

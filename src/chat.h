@@ -54,7 +54,7 @@ typedef struct ClientTab _xchat_context;
 #include "../pluginsrc/xchat-plugin.h"
 #include "../pluginsrc/sparkles-plugin.h"
 #define CLIENT_NAME "Sparkles"
-#define CLIENT_VERSION "0.01"
+#define CLIENT_VERSION "0.50"
 #define CONTEXT_BUF_SIZE 90
 #define NUM_GUISTATES 10
 
