@@ -48,6 +48,11 @@ void AutoloadAddon(const char *Filename) {
 void AutoloadDirectory(const char *Directory, const char *Filetype, void (*Handler)(const char *Path)) {
   DIR *dir;
   struct dirent *ent;
+  char Path[260];
+  if(Directory[0]=='~') {
+     sprintf(Path, "%s%s", PrefPath, Directory+1);
+     Directory = Path;
+  }
   if((dir = opendir(Directory))) {
     while((ent = readdir(dir))) {
       if(*ent->d_name == '.') continue;

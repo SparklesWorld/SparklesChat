@@ -10,6 +10,10 @@ local Sockets = {};
 const ConfigPrefix = "Networks/FChat/";
 Config <- api.LoadTable("fchat");
 
+// config variables
+JoinQueueTime <- 200; //api.GetConfigInt(200, ConfigPrefix+"Defaults/JoinQueueTime");
+MessageQueueTime <- 2500; //api.GetConfigInt(2500, ConfigPrefix+"Defaults/MessageQueueTime");
+
 class Server {
   Socket = 0;            // socket id
   Connected = false;     // currently connected to server
@@ -493,7 +497,7 @@ function MsgDelayTimer(S) {
   if(S.TalkQueue.len()) {
     local Command = S.TalkQueue.pop();
     S.Send(Command[0], Command[1]);
-    return (S.VAR.msg_flood * 2500).tointeger();
+    return (S.VAR.msg_flood * MessageQueueTime).tointeger();
   }
   S.TalkTimer = null;
   return false;
@@ -504,7 +508,8 @@ function SayMe(S, Text, C) {
       S.TalkQueue.push([Command, Param]);
     else {
       S.Send(Command, Param);
-      S.TalkTimer = api.AddTimer((S.VAR.msg_flood * 2500).tointeger(), MsgDelayTimer, S);
+      if(MessageQueueTime) // only use the queue if a time is set
+        S.TalkTimer = api.AddTimer((S.VAR.msg_flood * MessageQueueTime).tointeger(), MsgDelayTimer, S);
     }
   }
   local Channel = api.TabGetInfo(C, "channel");
@@ -780,7 +785,7 @@ function FindChannelWildcard(S, P) {
 function JoinDelayTimer(S) {
   if(S.JoinQueue.len()) {
     S.Send("JCH", {"channel":S.JoinQueue.pop()});   
-    return 200;
+    return JoinQueueTime;
   }
   S.JoinTimer = null;
   return false;
@@ -805,7 +810,7 @@ function JoinCmd(T, P, C) {
     S.JoinQueue.push(Channel);
   else {
     S.Send("JCH", {"channel":Channel});
-    S.JoinTimer = api.AddTimer(200, JoinDelayTimer, S);
+    S.JoinTimer = api.AddTimer(JoinQueueTime, JoinDelayTimer, S);
   }
   return EventReturn.HANDLED;
 }

@@ -105,8 +105,21 @@ int main( int argc, char* args[] ) {
   SDL_Thread *EventThread = SDL_CreateThread(RunEventThread, "Event", NULL);
   SDL_Thread *SocketThread = SDL_CreateThread(RunSocketThread, "Socket", NULL);
 
-  AutoloadDirectory("data/protocol/", "nut", AutoloadAddon);
-  AutoloadDirectory("data/addons/", "nut", AutoloadAddon);
+  {
+    cJSON *Autoload = cJSON_GetObjectItem(MainConfig, "Client");
+    Autoload = cJSON_GetObjectItem(Autoload, "Autoload");
+
+	for (int i=0; i<cJSON_GetArraySize(Autoload); i++) {
+      cJSON *LoadMe = cJSON_GetArrayItem(Autoload,i);
+      char Path[strlen(LoadMe->valuestring)+1];
+      strcpy(Path, LoadMe->valuestring);
+      char *Separator = strrchr(Path, '.');
+      if(!Separator)
+        continue;
+      *Separator = 0;
+      AutoloadDirectory(Path, Separator+1, AutoloadAddon);
+	}
+  }
 
   (*InitGUI[GUIType])();
   while(!quit) {

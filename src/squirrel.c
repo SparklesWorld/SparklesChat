@@ -1391,6 +1391,7 @@ HSQUIRRELVM Sq_Open(const char *File) {
   sq_pop(v,1); // pop api table
 
   Sq_DoFile(v, "data/scripts/common.nut");
+
   if(File) Sq_DoFile(v, File);
   return v;
 }

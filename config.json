@@ -1,6 +1,7 @@
 {
   "Client": {
-    "GUI": "Text"
+    "GUI": "SDL",
+    "Autoload": ["data/protocol/.nut", "~addons/.nut", "data/addons/.nut"]
   },
 
   "General": {
@@ -39,6 +40,10 @@
 
   "Networks": {
     "FChat": {
+      "Defaults": {
+        "JoinQueueTime": 200,
+        "MessageQueueTime": 2500
+      },
       "FChat": {
         "Host": "chat.f-list.net:9722",
         "Secure": 9799
