@@ -18,6 +18,7 @@ class Server {
   Socket = 0;            // socket id
   Connected = false;     // currently connected to server
   TryReconnect = false;  // try to reconnect if disconnected
+  UseSSL = false;
 
   MyStatus = 0;          // for restoring when reconnecting
   MyStatusMessage = "";
@@ -38,6 +39,7 @@ class Server {
   Host = "";             // for reconnecting
   Account = "";          // for reconnecting
   Password = "";         // for reconnecting 
+  UseSSL = false;        // for reconnecting
 
   IgnoreList = null;
   CHA = null;            // public channel list
@@ -155,6 +157,7 @@ function ConnectGotTicket(Code, Data, Extra) {
   NewServer.Ticket = Data["ticket"];
   NewServer.Account = Config["Account"];
   NewServer.Password = Config["Password"];
+  NewServer.UseSSL = UseSSL;
   local Socket = api.NetOpen(FChat_Socket, Host, "websocket"+(UseSSL?" ssl":""));
   NewServer.Socket = Socket;
   api.TabSetInfo(NewServer.Tab, "Socket", Socket.tostring());
@@ -201,6 +204,11 @@ function Connect(Options) { // called by /connect
     api.TempMessage("No host specified", null);
     return;
   }
+
+  local SSLPort = api.GetConfigInt(ConfigPrefix+ServerName+"/Secure", 0);
+  if(UseSSL && SSLPort)
+    Host = api.SetHostnamePort(Host, SSLPort);
+
   local Form = api.MakeForms({"account":Config["Account"], "password":Config["Password"]});
   api.CurlPost(ConnectGotTicket, [Options, Host, ServerName, UseSSL, AutoJoin, Character], "https://www.f-list.net/json/getApiTicket.php", Form);
 }
@@ -566,7 +574,7 @@ function ReconnectCmd(T, P, C) {
   api.NetClose(OldSockId);
 
   // open a new one
-  local NewSockId = api.NetOpen(FChat_Socket, Host, "websocket"); // todo: keep SSL if using SSL
+  local NewSockId = api.NetOpen(FChat_Socket, Host, "websocket"+(OldSock.UseSSL?" ssl":""));
   OldSock.Socket = NewSockId;
   api.TabSetInfo(OldSock.Tab, "Socket", NewSockId.tostring());
  

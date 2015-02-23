@@ -200,6 +200,9 @@ Type is a string containing the following options separated by white space:
 "websocket" - websockets
 "ssl"       - use SSL
 
+api.SetHostnamePort(Host, Port)
+Sticks a port number on Host, or changes it if it's already there
+
 ---Enums---
 enum Priority {
   LOWEST,

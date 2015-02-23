@@ -39,11 +39,47 @@ SSL_CTX *SSLContext;
 
 SqSocket *FirstSock = NULL;
 
+const char *SSLErrorString() {
+  static char buf[256];
+  ERR_error_string(ERR_get_error(), buf);
+  return buf;
+}
+
 int SockSend(SqSocket *Sock, const char *Send, int Length) {
+  if(Sock->Secure) {
+    int Return = SSL_write(Sock->Secure, Send, Length);
+	switch(SSL_get_error(Sock->Secure, Return)) {
+      case SSL_ERROR_SSL:
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SSL_ERROR_SSL: %s", SSLErrorString());
+        break;
+      case SSL_ERROR_SYSCALL:
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SSL_ERROR_SYSCALL");
+        break;
+	  case SSL_ERROR_ZERO_RETURN:
+        Sock->Flags |= SQSOCK_CLEANUP;      
+        break;
+	}
+    return Return;
+  }
   return send(Sock->Socket, Send, Length, 0);
 }
 
 int SockRecv(SqSocket *Sock, char *Buffer, int Length) {
+  if(Sock->Secure) {
+    int Return = SSL_read(Sock->Secure, Buffer, Length);
+    switch(SSL_get_error(Sock->Secure, Return)) {
+      case SSL_ERROR_SSL:
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SSL_ERROR_SSL: %s", SSLErrorString());
+        break;
+      case SSL_ERROR_SYSCALL:
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SSL_ERROR_SYSCALL");
+        break;
+      case SSL_ERROR_ZERO_RETURN:
+        Sock->Flags |= SQSOCK_CLEANUP;      
+        break;
+    }
+    return Return;
+  }
   return recv(Sock->Socket, Buffer, Length, 0);
 }
 
@@ -108,6 +144,11 @@ void DeleteSocketById(int Id) {
       BIO_free(Sock->Bio);
       if(Sock->Websocket)
         wslay_event_context_free(Sock->Websocket);
+      if(Sock->Secure) { // from HexChat
+        SSL_set_shutdown(Sock->Secure, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+        SSL_free(Sock->Secure);
+        ERR_remove_state(0);		  /* free state buffer */
+      }
       if(Sock->Socket)
         close(Sock->Socket);
       free(Sock->Buffer);
@@ -179,6 +220,17 @@ int RunSocketThread(void *Data) {
                 break;
             }
             BIO_get_fd(Sock->Bio, &Sock->Socket);
+            if(Sock->Flags & SQSOCK_SSL) {
+              Sock->Secure = SSL_new(SSLContext);
+              if(!Sock->Secure) {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Can't make new SSL socket");
+                Sock->Flags |= SQSOCK_CLEANUP;
+              } else {
+                SSL_set_fd(Sock->Secure, Sock->Socket);
+                SSL_set_connect_state(Sock->Secure);
+                SSL_CTX_set_verify(SSLContext, SSL_VERIFY_NONE, NULL);
+              }
+            }
             if(Sock->Flags & SQSOCK_WEBSOCKET)
               WebsocketOpen(Sock);
             break;

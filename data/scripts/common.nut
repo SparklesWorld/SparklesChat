@@ -186,3 +186,7 @@ api.MakeContext <- function (Server, Channel) {
 api.MakeContextExists <- function (Server, Channel) {
   return api.TabExists(api.MakeContext(Server, Channel));
 }
+api.SetHostnamePort <- function (Hostname, Port) {
+  Hostname = split(Hostname, ":");
+  return Hostname[0]+":"+Port;
+}

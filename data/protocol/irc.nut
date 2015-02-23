@@ -13,6 +13,7 @@ class Server {
   Socket = 0;
   Host = null;
   MyHost = "";
+  UseSSL = false;
   Tab = "";
   RawTab = "";
   Channels = [];
@@ -36,18 +37,38 @@ function Connect(Options) { // called by /connect
   Options = split(Options, " ");
   local ServerName = Options[0];
   local Host = api.GetConfigStr(ConfigPrefix+ServerName+"/Host", "");
+
+  // todo: hold onto this state
+  local UseSSL = false;
+  local AutoJoin = true;
+  for(local i=1;i<Options.len();i++) {
+    if(Options[i] == "-ssl") 
+      UseSSL = true;
+    if(Options[i] == "-noautojoin")
+      AutoJoin = false;
+  }
+
   if(Host == "") {
-    print("No host specified");
+    api.TempMessage("No host specified", null);
     return;
   }
-  local HostConnect = Host+":6667";
-  local Socket = api.NetOpen(IRC_Socket, HostConnect, "");
+  local HostConnect;
+  if(split(Host, ":").len() > 1)
+    HostConnect = Host;
+  else {
+    if(UseSSL)
+      HostConnect = api.SetHostnamePort(Host, api.GetConfigInt(ConfigPrefix+ServerName+"/Secure", 6697));
+    else
+      HostConnect = api.SetHostnamePort(Host, 6667);
+  }
+  local Socket = api.NetOpen(IRC_Socket, HostConnect, (UseSSL?"ssl":""));
 
   local NewServer = Server();
   NewServer.Tab = api.TabCreate(ServerName, "", TabFlags.SERVER);
   NewServer.RawTab = api.TabCreate("Raw", NewServer.Tab, 0);
   NewServer.Socket = Socket;
   NewServer.Host = HostConnect;
+  NewServer.UseSSL = UseSSL;
   api.TabSetInfo(NewServer.Tab, "Socket", Socket.tostring());
   api.TabSetInfo(NewServer.Tab, "Nick", "SparklesChat"); // will get updated
 
@@ -153,7 +174,7 @@ function ReconnectCmd(T, P, C) {
   api.NetClose(OldSockId);
 
   // open a new one
-  local NewSockId = api.NetOpen(IRC_Socket, Host, "");
+  local NewSockId = api.NetOpen(IRC_Socket, Host, (OldSock.UseSSL?"ssl":""));
   OldSock.Socket = NewSockId;
   api.TabSetInfo(OldSock.Tab, "Socket", NewSockId.tostring());
  
@@ -228,6 +249,7 @@ function IRC_Socket(Socket, Event, Text) {
         api.NetSend(Socket, "PONG "+Split[0][1]+"\r\n");
         if(!Server.Connected && Server.TryReconnect) {
           // restore state; todo: restore /away if it was set
+          api.TabRemoveFlags(ServerTab, TabFlags.NOTINCHAN);
           local ChannelList = "";
           foreach(Channel in api.TabGetInfo(Server.Tab, "List"))
             if(api.TabHasFlags(Channel, TabFlags.CHANNEL)) {
@@ -235,7 +257,8 @@ function IRC_Socket(Socket, Event, Text) {
                 ChannelList += ",";
               ChannelList += api.TabGetInfo(Channel, "Channel");
             }
-          api.Command("join", ChannelList, Server.Tab);
+          if(ChannelList != "");
+            api.Command("join", ChannelList, Server.Tab);
         }
         Server.Connected = true;
         Server.TryReconnect = true;
