@@ -18,7 +18,10 @@ class Server {
   RawTab = "";
   Channels = [];
   Connected = false;
+  Connecting = false;
   TryReconnect = false;
+  ReconnectTimer = null;
+  ReconnectDelay = 0;
 
   UserName = ""; // for reconnects
   RealName = "";
@@ -214,10 +217,30 @@ api.AddCommandHook("nick",  NickCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("reconnect",  ReconnectCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("close",  CloseCmd, Priority.HIGH|PROTOCOL_CMD, null, null);
 
+function ReconnectTimer(S) {
+  if(S.Connected || S.Connecting)
+    return false;
+  api.Command("reconnect", "", S.Tab);
+  S.ReconnectDelay += 15;
+  api.AddMessage("Retrying reconnect in " +S.ReconnectDelay, S.Tab, 0, 0);
+  return S.ReconnectDelay * 1000;
+}
+
 function IRC_Socket(Socket, Event, Text) {
   switch(Event) {
     case SockEvents.CANT_CONNECT:
       print("Can't connect: "+Text);
+      break;
+    case SockEvents.DISCONNECTED:
+      print("Disconnected: "+Text);
+      local Server = Sockets[Socket];
+      api.AddMessage("Disconnected ("+Text+")", Server.Tab, 0, 0);
+      Server.Connected = false;
+      Server.Connecting = false;
+      if(Server.TryReconnect) {
+        Server.ReconnectDelay = 0;
+        Server.ReconnectTimer = api.AddTimer(0, ReconnectTimer, Server);
+      }
       break;
     case SockEvents.CONNECTED:
       local Server = Sockets[Socket];
@@ -249,7 +272,7 @@ function IRC_Socket(Socket, Event, Text) {
         api.NetSend(Socket, "PONG "+Split[0][1]+"\r\n");
         if(!Server.Connected && Server.TryReconnect) {
           // restore state; todo: restore /away if it was set
-          api.TabRemoveFlags(ServerTab, TabFlags.NOTINCHAN);
+          api.TabRemoveFlags(Server.Tab, TabFlags.NOTINCHAN);
           local ChannelList = "";
           foreach(Channel in api.TabGetInfo(Server.Tab, "List"))
             if(api.TabHasFlags(Channel, TabFlags.CHANNEL)) {
@@ -262,6 +285,10 @@ function IRC_Socket(Socket, Event, Text) {
         }
         Server.Connected = true;
         Server.TryReconnect = true;
+        if(Server.ReconnectTimer) {
+          api.DelTimer(Server.ReconnectTimer);
+          Server.ReconnectTimer = null;
+        }
         return;
       }
       Split[0].apply(FixColon);

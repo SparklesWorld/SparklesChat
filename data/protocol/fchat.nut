@@ -17,8 +17,11 @@ MessageQueueTime <- 2500; //api.GetConfigInt(2500, ConfigPrefix+"Defaults/Messag
 class Server {
   Socket = 0;            // socket id
   Connected = false;     // currently connected to server
+  Connecting = false;    // currently connecting
   TryReconnect = false;  // try to reconnect if disconnected
   UseSSL = false;
+  ReconnectTimer = null;
+  ReconnectDelay = 0;
 
   MyStatus = 0;          // for restoring when reconnecting
   MyStatusMessage = "";
@@ -158,6 +161,7 @@ function ConnectGotTicket(Code, Data, Extra) {
   NewServer.Account = Config["Account"];
   NewServer.Password = Config["Password"];
   NewServer.UseSSL = UseSSL;
+  NewServer.Connecting = true;
   local Socket = api.NetOpen(FChat_Socket, Host, "websocket"+(UseSSL?" ssl":""));
   NewServer.Socket = Socket;
   api.TabSetInfo(NewServer.Tab, "Socket", Socket.tostring());
@@ -241,6 +245,7 @@ function HandleServerMessage(S, Command, P, Raw) {
   switch(Command) {
     case "IDN": // identified
       S.Connected = true;
+      S.Connecting = false;
       api.TabRemoveFlags(S.Tab, TabFlags.NOTINCHAN);
       S.TryReconnect = true;
       S.Send("CHA", null);
@@ -464,10 +469,30 @@ function HandleServerMessage(S, Command, P, Raw) {
   }
 }
 
+function ReconnectTimer(S) {
+  if(S.Connected || S.Connecting)
+    return false;
+  api.Command("reconnect", "", S.Tab);
+  S.ReconnectDelay += 15;
+  api.AddMessage("Retrying reconnect in " +S.ReconnectDelay, S.Tab, 0, 0);
+  return S.ReconnectDelay * 1000;
+}
+
 function FChat_Socket(Socket, Event, Text) {
   switch(Event) {
     case SockEvents.CANT_CONNECT:
       print("Can't connect: "+Text);
+      break;
+    case SockEvents.DISCONNECTED:
+      print("Disconnected: "+Text);
+      local Server = Sockets[Socket];
+      api.AddMessage("Disconnected ("+Text+")", Server.Tab, 0, 0);
+      Server.Connected = false;
+      Server.Connecting = false;
+      if(Server.TryReconnect) {
+        Server.ReconnectDelay = 0;
+        Server.ReconnectTimer = api.AddTimer(0, ReconnectTimer, Server);
+      }
       break;
     case SockEvents.CONNECTED:
       print("Connected: "+Text);

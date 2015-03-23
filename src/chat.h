@@ -637,6 +637,7 @@ typedef struct SqSocket {
 #define SQSOCK_CLEANUP      16
 #define SQSOCK_WS_CONNECTED 32
 #define SQSOCK_WS_BLOCKING  64
+#define SQSOCK_DISCONNECTED 128
 
 extern SqSocket *FirstSock;
 SqSocket *FindSockById(int Id);

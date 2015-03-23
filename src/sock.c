@@ -28,7 +28,7 @@ SSL_CTX *SSLContext;
 #define WANTSOCKET
 #define WANTARPA
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winbase.h>
 #include <io.h>
 #else
@@ -39,15 +39,21 @@ SSL_CTX *SSLContext;
 
 SqSocket *FirstSock = NULL;
 
+void QueueSockEvent(SqSocket *Socket, int Event, const char *Text) {
+  IPC_WriteF(&SocketToEvent, "S%i;%i:%s", Socket->Id, Event, Text);
+}
+
+static char ErrBuff[256];
+
 const char *SSLErrorString() {
-  static char buf[256];
-  ERR_error_string(ERR_get_error(), buf);
-  return buf;
+  ERR_error_string(ERR_get_error(), ErrBuff);
+  return ErrBuff;
 }
 
 int SockSend(SqSocket *Sock, const char *Send, int Length) {
+  int Return;
   if(Sock->Secure) {
-    int Return = SSL_write(Sock->Secure, Send, Length);
+    Return = SSL_write(Sock->Secure, Send, Length);
 	switch(SSL_get_error(Sock->Secure, Return)) {
       case SSL_ERROR_SSL:
         SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SSL_ERROR_SSL: %s", SSLErrorString());
@@ -59,14 +65,27 @@ int SockSend(SqSocket *Sock, const char *Send, int Length) {
         Sock->Flags |= SQSOCK_CLEANUP;      
         break;
 	}
-    return Return;
   }
-  return send(Sock->Socket, Send, Length, 0);
+  else {
+    Return = send(Sock->Socket, Send, Length, 0);
+    if(Return < 0) {
+      Sock->Flags |= SQSOCK_CLEANUP | SQSOCK_DISCONNECTED;
+#ifdef _WIN32
+      int Error = WSAGetLastError();
+      sprintf(ErrBuff, "%i", Error);
+      QueueSockEvent(Sock, SQS_DISCONNECTED, ErrBuff);
+#else
+      QueueSockEvent(Sock, SQS_DISCONNECTED, strerror(errno));
+#endif
+    }
+  }
+  return Return;
 }
 
 int SockRecv(SqSocket *Sock, char *Buffer, int Length) {
+  int Return;
   if(Sock->Secure) {
-    int Return = SSL_read(Sock->Secure, Buffer, Length);
+    Return = SSL_read(Sock->Secure, Buffer, Length);
     switch(SSL_get_error(Sock->Secure, Return)) {
       case SSL_ERROR_SSL:
         SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SSL_ERROR_SSL: %s", SSLErrorString());
@@ -78,9 +97,21 @@ int SockRecv(SqSocket *Sock, char *Buffer, int Length) {
         Sock->Flags |= SQSOCK_CLEANUP;      
         break;
     }
-    return Return;
   }
-  return recv(Sock->Socket, Buffer, Length, 0);
+  else {
+    Return = recv(Sock->Socket, Buffer, Length, 0);
+    if(Return < 0) {
+      Sock->Flags |= SQSOCK_CLEANUP | SQSOCK_DISCONNECTED;
+#ifdef _WIN32
+      int Error = WSAGetLastError();
+      sprintf(ErrBuff, "%i", Error);
+      QueueSockEvent(Sock, SQS_DISCONNECTED, ErrBuff);
+#else
+      QueueSockEvent(Sock, SQS_DISCONNECTED, strerror(errno));
+#endif
+    }
+  }
+  return Return;
 }
 
 // http://wiki.openssl.org/index.php/BIO
@@ -100,10 +131,6 @@ void EndSock() {
   CRYPTO_cleanup_all_ex_data();
   ERR_free_strings();
   SSL_CTX_free(SSLContext);
-}
-
-void QueueSockEvent(SqSocket *Socket, int Event, const char *Text) {
-  IPC_WriteF(&SocketToEvent, "S%i;%i:%s", Socket->Id, Event, Text);
 }
 
 int CreateSqSock(HSQUIRRELVM v, HSQOBJECT Handler, const char *Host, int Flags) {
@@ -185,6 +212,9 @@ void WebsocketOpen(SqSocket *Sock);
 void WebsocketWrite(SqSocket *Sock, const char *String);
 
 int RunSocketThread(void *Data) {
+  int optval;
+  int optlen = sizeof(optval);
+
   while(!quit) {
     char *Command, *Temp;
     char TempBuf[60];
@@ -219,6 +249,9 @@ int RunSocketThread(void *Data) {
                 Sock->Flags |= SQSOCK_CLEANUP;
                 break;
             }
+            if(Sock->Flags & SQSOCK_CLEANUP)
+              break;
+
             BIO_get_fd(Sock->Bio, &Sock->Socket);
             if(Sock->Flags & SQSOCK_SSL) {
               Sock->Secure = SSL_new(SSLContext);
@@ -231,6 +264,15 @@ int RunSocketThread(void *Data) {
                 SSL_CTX_set_verify(SSLContext, SSL_VERIFY_NONE, NULL);
               }
             }
+
+            optval = 1;
+            if(setsockopt(Sock->Socket, SOL_SOCKET, SO_KEEPALIVE, (const char*)&optval, sizeof(optval)) < 0)
+              SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Can't turn on tcp keepalive");
+            else if(getsockopt(Sock->Socket, SOL_SOCKET, SO_KEEPALIVE, (char*)&optval, &optlen) < 0)
+              SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Can't check if keepalive was enabled");
+            if(!optval)
+              SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Keepalive wasn't enabled");
+
             if(Sock->Flags & SQSOCK_WEBSOCKET)
               WebsocketOpen(Sock);
             break;

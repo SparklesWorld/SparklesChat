@@ -74,6 +74,7 @@ enum SockEvents {
   CANT_CONNECT,         // can't connect to the socket
   CONNECTED,            // connected to the socket successfully
   NEW_DATA,             // new data from the socket
+  DISCONNECTED,         // disconnected from server
 };
 
 api.FFEscape <- function (Code) {
