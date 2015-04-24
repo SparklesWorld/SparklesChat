@@ -129,6 +129,29 @@ class ChannelStatus {
   }
 };
 
+const API_URL = "http://www.f-list.net/json/api/";
+
+function CallAPI(S, Callback, Name, Form, Extra) {
+  function CallAPIGotTicket(Code, Data, Extra) {
+    if(Code != 0) {
+      print("Error getting ticket");
+      return;
+    }
+    Data = api.DecodeJSON(Data);
+    if(Data["error"] != "") {
+      print("Error: "+Data["error"]);
+      return;
+    }
+    Form.account <- S.Account;
+    Form.ticket <- Data["ticket"];
+    api.CurlPost(Callback, null, API_URL+Name+".php", api.MakeForms(Form));
+  }
+  api.MakeForms({"account":Config["Account"], "password":Config["Password"]});
+
+  local GetTicketForm = api.MakeForms({"account":S.Account, "password":S.Password});
+  api.CurlPost(CallAPIGotTicket, null, "https://www.f-list.net/json/getApiTicket.php", GetTicketForm);
+}
+
 function ConnectGotTicket(Code, Data, Extra) {
   if(Code != 0) {
     print("Error getting the initial ticket");
@@ -928,6 +951,21 @@ api.AddCommandHook("preview",  BBTestCmd, Priority.NORMAL|PROTOCOL_CMD, null, nu
 api.AddCommandHook("bbtest",   BBTestCmd, Priority.NORMAL, null, null);
 api.AddCommandHook("fchataccount", FChatAccountCmd, Priority.NORMAL, null, null);
 api.AddCommandHook("reconnect",  ReconnectCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
+
+function ApiTestCmd(T, P, C) {
+  local S = Sockets[api.TabGetInfo(C, "Socket")];
+  P = api.CmdParamSplit(P);
+  function Display(Code, Data, Extra) {
+    print(Data);
+  };
+  if(1 in P[1]) { // has argument?
+    local Params = compilestring("return "+P[1][1])();
+    CallAPI(S, Display, P[0][0], Params, null);
+  } else
+    CallAPI(S, Display, P[0][0], {}, null);
+  return EventReturn.HANDLED;
+}
+api.AddCommandHook("jsonapi",  ApiTestCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 
 function SaveConfig(T, P, C) {
   api.SaveTable("fchat", Config);

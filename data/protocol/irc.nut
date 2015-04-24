@@ -126,7 +126,7 @@ function MsgCmd(T, P, C) {
 }
 function NoticeCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
-  P = api.TextParamSplit(P);
+  P = api.CmdParamSplit(P);
   local Target = P[0][0];
   local Text = P[1][1];
   S.Send("notice "+Target+" :"+Text);
