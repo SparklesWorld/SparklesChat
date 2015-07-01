@@ -15,6 +15,11 @@ int xchat_plugin_deinit()
 
 Plugins can't implement protocols, but libraries can help in a protocol's implementation.
 
+---- GUI interface ----
+void Sparkles_StartGUI();
+Called when the client is ready to start the GUI.
+This function should contain the GUI's main loop and only terminate when the GUI is ready to close.
+
 ---- Library interface ----
 In Squirrel, api.RequireCLibrary(LibraryFile, InstallHere)
 Will open LibraryFile (and append a .so or .dll to the name as needed) and create a table named InstallHere to install functions in.
@@ -126,8 +131,32 @@ Type is a string containing the following options separated by white space:
 "websocket" - websockets
 "ssl"       - use SSL
 
-int Spark_ListSkipTo(xchat_list *List, const char *SkipTo);
+int Spark_ListSkipTo(xchat_plugin *ph, xchat_list *List, const char *SkipTo);
 Advances a list until the name reaches SkipTo. Returns 1 if found, or 0 if not.
+
+void *Spark_ListPtr(xchat_plugin *ph, xchat_list *xlist, const char *name);
+int Spark_SetListPtr(xchat_plugin *ph, xchat_list *xlist, const char *name, void *newvalue);
+Gets or sets a list pointer. Currently only used for GUI stuff, where tabs have four pointers
+named guidata1 through guidata4.
+
+void Spark_LockResource(int Resource);
+void Spark_UnlockResource(int Resource);
+For GUI plugins. Locks or unlocks the mutex associated with a specific resource. Resource 0 is the tabs list.
+
+void Spark_PollGUIMessages(int (*Callback)(int Code, char *Data1, char *Data2));
+For GUI plugins. Checks for pending GUI messages and calls Callback for each.
+Callback returns:
+  -1: unsupported Code, 0: free Data1 and Data2, 1: free Data2 only, 2: free Data1 only, 3: free neither
+
+void Spark_QueueEvent(const char *TypeName, const char *EventInfo, const char *EventContext, char EventType);
+For GUI plugins. Sends an event to the queue on the event/scripting thread, of type TypeName at EventContext with EventInfo.
+EventType values: 'C'=Command, 'E'=Event
+
+void Spark_Delay(Uint32 Time);
+For GUI plugins. Delays for Time milliseconds.
+
+void Spark_DebugPrint(const char *fmt, ...);
+Prints stuff to the terminal
 
 ---- XChat plugin API functions ----
 See http://xchat.org/docs/plugin20.html for usage information.

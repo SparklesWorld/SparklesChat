@@ -46,10 +46,19 @@ struct _sparkles_plugin
   void  (*Spark_CurlGet)(void (*Function) (void *Data, int Size, void *Extra), void *Extra, const char *URL);
   void  (*Spark_CurlPost)(void (*Function) (void *Data, int Size, void *Extra), void *Extra, const char *URL, const char *Form);
   int (*Spark_ListSkipTo)(xchat_plugin *ph, xchat_list *List, const char *SkipTo);
-  char *(*Spark_StringClone)(const char *String);
   int   (*Spark_NetOpen)(void (*Function) (int Socket, int Event, char *Data), const char *Host, const char *Type);
   void  (*Spark_NetSend)(int Socket, const char *Text);
   void  (*Spark_NetClose)(int Socket, int Reopen);
+  void  (*Spark_LockResource)(int Resource);
+  void  (*Spark_UnlockResource)(int Resource);
+  void  (*Spark_PollGUIMessages)(int (*Callback)(int Code, char *Data1, char *Data2));
+  void  (*Spark_QueueEvent)(const char *TypeName, const char *EventInfo, const char *EventContext, char EventType);
+  int   (*Spark_SetListStr) (xchat_plugin *ph, xchat_list *xlist, const char *name, const char *newvalue);
+  int   (*Spark_SetListInt) (xchat_plugin *ph, xchat_list *xlist, const char *name, int newvalue);
+  void *(*Spark_ListPtr)(xchat_plugin *ph, xchat_list *xlist, const char *name);
+  int   (*Spark_SetListPtr)(xchat_plugin *ph, xchat_list *xlist, const char *name, void *newvalue);
+  void  (*Spark_Delay)(Uint32 time);
+  void  (*Spark_DebugPrintf)(const char *format, ...);
 };
 
 #ifndef PLUGIN_C
@@ -84,10 +93,20 @@ int   Spark_SetClipboard(const char *New);
 void  Spark_CurlGet(void (*Function) (void *Data, int Size, void *Extra), void *Extra, const char *URL);
 void  Spark_CurlPost(void (*Function) (void *Data, int Size, void *Extra), void *Extra, const char *URL, const char *Form);
 int   Spark_ListSkipTo(xchat_plugin *ph, xchat_list *List, const char *SkipTo);
-char *Spark_StringClone(const char *CloneMe);
 int   Spark_NetOpen(void (*Function) (int Socket, int Event, char *Data), const char *Host, const char *Type);
 void  Spark_NetSend(int Socket, const char *Text);
 void  Spark_NetClose(int Socket, int Reopen);
+void  Spark_LockResource(int Resource);
+void  Spark_UnlockResource(int Resource);
+void  Spark_PollGUIMessages(int (*Callback)(int Code, char *Data1, char *Data2));
+void  Spark_QueueEvent(const char *TypeName, const char *EventInfo, const char *EventContext, char EventType);
+int   Spark_SetListStr(xchat_plugin *ph, xchat_list *xlist, const char *name, const char *newvalue);
+int   Spark_SetListInt(xchat_plugin *ph, xchat_list *xlist, const char *name, int newvalue);
+void *Spark_ListPtr(xchat_plugin *ph, xchat_list *xlist, const char *name);
+int   Spark_SetListPtr(xchat_plugin *ph, xchat_list *xlist, const char *name, void *newvalue);
+void  Spark_Delay(Uint32 time);
+void  Spark_DebugPrintf(const char *format, ...);
+
 #endif
 
 #if !defined(PLUGIN_C)
@@ -126,10 +145,19 @@ void  Spark_NetClose(int Socket, int Reopen);
 #define Spark_CurlGet ((SPARKLES_PLUGIN_HANDLE)->Spark_CurlGet)
 #define Spark_CurlPost ((SPARKLES_PLUGIN_HANDLE)->Spark_CurlPost)
 #define Spark_ListSkipTo ((SPARKLES_PLUGIN_HANDLE)->Spark_ListSkipTo)
-#define Spark_StringClone ((SPARKLES_PLUGIN_HANDLE)->Spark_StringClone)
 #define Spark_NetOpen ((SPARKLES_PLUGIN_HANDLE)->Spark_NetOpen)
 #define Spark_NetSend ((SPARKLES_PLUGIN_HANDLE)->Spark_NetSend)
 #define Spark_NetClose ((SPARKLES_PLUGIN_HANDLE)->Spark_NetClose)
+#define Spark_LockResource ((SPARKLES_PLUGIN_HANDLE)->Spark_LockResource)
+#define Spark_UnlockResource ((SPARKLES_PLUGIN_HANDLE)->Spark_UnlockResource)
+#define Spark_PollGUIMessages ((SPARKLES_PLUGIN_HANDLE)->Spark_PollGUIMessages)
+#define Spark_QueueEvent ((SPARKLES_PLUGIN_HANDLE)->Spark_QueueEvent)
+#define Spark_SetListStr ((SPARKLES_PLUGIN_HANDLE)->Spark_SetListStr)
+#define Spark_SetListInt ((SPARKLES_PLUGIN_HANDLE)->Spark_SetListInt)
+#define Spark_ListPtr ((SPARKLES_PLUGIN_HANDLE)->Spark_ListPtr)
+#define Spark_SetListPtr ((SPARKLES_PLUGIN_HANDLE)->Spark_SetListPtr)
+#define Spark_Delay ((SPARKLES_PLUGIN_HANDLE)->Spark_Delay)
+#define Spark_DebugPrintf ((SPARKLES_PLUGIN_HANDLE)->Spark_DebugPrintf)
 #endif
 
 #ifdef __cplusplus

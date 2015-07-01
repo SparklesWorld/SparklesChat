@@ -1,0 +1,3 @@
+*.c linguist-language=C
+*.nut linguist-language=Squirrel
+*.vala linguist-language=Vala

@@ -773,10 +773,13 @@ void RunTextGUI() {
       GUIState *State;
       ClientTab *Tab;
       switch(e.user.code) {
-        case MTR_DIRTY_TABS:       //
+        case MTR_DIRTY_TABS_LIST:  //
+        case MTR_DIRTY_TABS_ATTR:  //
           Dialog = FindDialogWithProc(NULL, NULL, &State, Widget_ChannelTabs);
           if(Dialog)
             Dialog->flags |= D_DIRTY;
+          if(e.user.data1)
+            free(e.user.data1);
           break;
         case MTR_INFO_ADDED:       // d1 = context
           Tab = FindTab(e.user.data1);
@@ -788,7 +791,8 @@ void RunTextGUI() {
             Tab->UndrawnLines = 0;
           free(e.user.data1);
           break;
-        // implement all or most of these later
+/*
+        // redo as GUI commands
         case MTR_EDIT_CUT:         // d1 = context
         case MTR_EDIT_COPY:        // d1 = context
         case MTR_EDIT_DELETE:      // d1 = context
@@ -804,6 +808,7 @@ void RunTextGUI() {
           if(e.user.data2)
             free(e.user.data2);
           break;
+*/
         case MTR_GUI_COMMAND:      // d1 = context, d2 = command name
           Tab = FindTab(e.user.data1);
           free(e.user.data1);

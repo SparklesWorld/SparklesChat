@@ -266,7 +266,7 @@ const char __attribute__ ((hot)) *ConvertBBCode(char *Output, const char *Input,
 
   const char *TagName[] = {"b]","i]","u]","s]","sub]","sup]","url=","url]","icon]","user]","color=","color]","noparse]",NULL};
   const int TagLen[] = {2, 2, 2, 2, 4, 4, 4, 4, 5, 5, 6, 6, 8}; // 5+ treated specially
-  const char *TagEndName[] = {"[/b]","[/i]","[/u]","[/s]","[/sub]","[/sup]","[/url]","[/url]","[/icon]","[/user]","[/color]",NULL,"[/noparse]"};
+  const char *TagEndName[] = {"[/b]","[/i]","[/u]","[/s]","[/sub]","[/sup]","[/url]","[/url]","[/icon]","[/user]","[/color]","[/noparse]",NULL};
   int TagCodes[] = {0x02, 0x1d, 0x1f, FORMAT_STRIKEOUT, FORMAT_SUBSCRIPT, FORMAT_SUPERSCRIPT,
     FORMAT_URL_LINK, FORMAT_URL_LINK, FORMAT_ICON_LINK, FORMAT_NICK_LINK,
    FORMAT_CANCEL_COLORS, FORMAT_CANCEL_COLORS};

@@ -14,3 +14,5 @@ Dependencies
 - [wslay](https://github.com/tatsuhiro-t/wslay) ([alt](https://github.com/jirihnidek/wslay))
 - [OpenSSL](https://www.openssl.org/)
 - [libcURL](http://curl.haxx.se/libcurl/)
+- [Vala](https://wiki.gnome.org/Projects/Vala)
+- [GTK+ 3](http://www.gtk.org/download/index.php)

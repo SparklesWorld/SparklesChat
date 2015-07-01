@@ -185,10 +185,13 @@ void RunMinimalGUI() {
       SDL_Keysym Key;
       char TempChar[2] = {0,0};
       switch(e.user.code) {
-        case MTR_DIRTY_TABS:       //
+        case MTR_DIRTY_TABS_LIST:  //
+        case MTR_DIRTY_TABS_ATTR:  //
           Dialog = FindDialogWithProc(NULL, NULL, NULL, Widget_ChannelTabs);
           if(Dialog)
             Dialog->flags |= D_DIRTY;
+          if(e.user.data1)
+            free(e.user.data1);
           break;
         case MTR_INFO_ADDED:       // d1 = context
           Tab = FindTab(e.user.data1);
@@ -200,6 +203,7 @@ void RunMinimalGUI() {
             Tab->UndrawnLines = 0;
           free(e.user.data1);
           break;
+/* to do: change to GUI commands
         case MTR_EDIT_CUT:         // d1 = context
           Tab = FindTab(e.user.data1);
           free(e.user.data1);
@@ -276,6 +280,7 @@ void RunMinimalGUI() {
           }
           free(e.user.data2);
           break;
+*/
         case MTR_GUI_COMMAND:      // d1 = context, d2 = command name
           Tab = FindTab(e.user.data1);
           free(e.user.data1);

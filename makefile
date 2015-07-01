@@ -1,21 +1,9 @@
 objlist := chat draw gui tui cJSON text squirrel eventcmd fnmatch sock plugin ipc websocket util
-#dllobjlist := libvisual
+dllobjlist := libvisual
 program_title = chat
 
 CC := gcc
 LD := g++
-SQUIRREL=../SQUIRREL3
-WSLAY=../wslay
-
-ifdef LINUX
-  CFLAGS := -Wall -O2 -std=gnu99 `sdl2-config --cflags` -I$(SQUIRREL)/include -I$(WSLAY)/lib/includes
-  LDLIBS := -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lssl -lcrypto -lsquirrel -lsqstdlib -lncurses -lwslay -lcurl -L. -L$(SQUIRREL)/lib -L$(WSLAY)/lib 
-  LDFLAGS := -Wl
-else
-  CFLAGS := -Wall -O2 -std=gnu99
-  LDLIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lssl -lcrypto -lSDL2_ttf -lsquirrel -lsqstdlib -lpdcurses -lgdi32 -lcomdlg32 -lcurldll -lws2_32 -lwslay
-  LDFLAGS := -Wl,-subsystem,windows
-endif
 
 objdir := obj
 srcdir := src
@@ -26,18 +14,45 @@ dllsrcdir := pluginsrc
 dllobjlisto := $(foreach o,$(dllobjlist),$(dlldir)/$(o).o)
 dllobjlistdll := $(foreach dll,$(dllobjlist),$(dlldir)/$(dll).dll)
 
-.PHONY: clean
+ifdef LINUX
+  SQUIRREL=../SQUIRREL3
+  WSLAY=../wslay
+  CFLAGS := -Wall -O2 -std=gnu99 `sdl2-config --cflags` -I$(SQUIRREL)/include -I$(WSLAY)/lib/includes
+  LDLIBS := -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lssl -lcrypto -lsquirrel -lsqstdlib -lncurses -lwslay -lcurl -L. -L$(SQUIRREL)/lib -L$(WSLAY)/lib 
+  LDFLAGS := -Wl
+else
+  CFLAGS := -Wall -O2 -std=gnu99
+  LDLIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lssl -lcrypto -lSDL2_ttf -lsquirrel -lsqstdlib -lpdcurses -lgdi32 -lcomdlg32 -lcurldll -lws2_32 -lwslay
+  LDFLAGS := -Wl,-subsystem,windows
+endif
 
-chat: $(objlisto) $(objlistopp)
+chat: $(objlisto)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(objdir)/%.o: $(srcdir)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
-#$(dlldir)/%.o: $(dllsrcdir)/%.c
-#	$(CC) $(CFLAGS) -DWIN32 -c $< -o $@
-#$(dlldir)/%.dll: $(dlldir)/%.o
-#	dllwrap --def pluginsrc/plugin.def --dllname $@ $<
+
+ifdef LINUX
+#  guisdl.so:
+#  guicurses.so:
+  guigtk.so: pluginsrc/guigtk.vala pluginsrc/guigtk.c
+	valac --pkg=gtk+-3.0 --library=guigtk pluginsrc/guigtk.vala pluginsrc/guigtk.c -X -fPIC -X -shared -o guigtk.so
+	rm guigtk.vapi
+else
+#  $(dlldir)/%.o: $(dllsrcdir)/%.c
+#	$(CC) $(CFLAGS) -c -o $@ $< -std=gnu99
+#  $(dlldir)/%.dll: $(dlldir)/%.o
+#	$(CC) -o $@ -s -shared $< -Wl,--subsystem,windows
+
+#  guisdl.dll:
+#  guicurses.dll:
+  guigtk.dll: pluginsrc/guigtk.vala pluginsrc/guigtk.c
+	valac --pkg=gtk+-3.0 --library=guigtk pluginsrc/guigtk.vala pluginsrc/guigtk.c -X -shared -o guigtk.dll
+	rm guigtk.vapi
+endif
+
+.PHONY: clean
 
 clean:
 	-rm $(objdir)/*.o

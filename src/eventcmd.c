@@ -20,6 +20,7 @@
 
 extern int CurHookId;
 extern int RecurseLevel;
+extern ClientTab *CurrentTab;
 extern ClientAddon *CurAddon;
 
 int StartEvent(const char *TypeName, const char *EventInfo, const char *EventContext, EventType *FirstType, int SpecialFlags) {
@@ -251,37 +252,13 @@ int NativeCommand(const char *Command, const char *Args, const char *Context) {
   XChatTokenize(Args, ArgBuff, Word, WordEol, 32, TOKENIZE_MULTI_WORD);
 
   if(!strcasecmp(Command, "client")) {
-    if(!strcasecmp(Word[0], "cut")) {
-      MainThreadRequest(MTR_EDIT_CUT, strdup(Context), NULL);
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "copy")) {
-      MainThreadRequest(MTR_EDIT_COPY, strdup(Context), NULL);
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "paste")) {
-      MainThreadRequest(MTR_EDIT_PASTE, strdup(Context), NULL);
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "delete")) {
-      MainThreadRequest(MTR_EDIT_PASTE, strdup(Context), NULL);
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "selectall")) {
-      MainThreadRequest(MTR_EDIT_SELECT_ALL, strdup(Context), NULL);
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "inputaddchar")) {
-      MainThreadRequest(MTR_EDIT_INPUT_CHAR, strdup(Context), strdup(WordEol[1]));
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "inputaddtext")) {
-      MainThreadRequest(MTR_EDIT_INPUT_TEXT, strdup(Context), strdup(WordEol[1]));
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "settext")) {
-      MainThreadRequest(MTR_EDIT_SET_TEXT, strdup(Context), strdup(WordEol[1]));
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "appendtext")) {
-      MainThreadRequest(MTR_EDIT_APPEND_TEXT, strdup(Context), strdup(WordEol[1]));
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "setcursor")) {
-      MainThreadRequest(MTR_EDIT_SET_CURSOR, strdup(Context), strdup(WordEol[1]));
-      return ER_HANDLED;
-    } else if(!strcasecmp(Word[0], "url")) {
+    const char *GUI_Instead[] = {"cut", "copy", "paste", "delete", "selectall", "inputaddchar", "inputaddtext", "settext", "appendtext", "setcursor", NULL};
+    for(int i = 0; GUI_Instead[i]; i++)
+      if(!strcasecmp(Word[0], GUI_Instead[i])) {
+         MainThreadRequest(MTR_GUI_COMMAND, strdup(Context), strdup(WordEol[0]));
+         return ER_HANDLED;
+      }
+    if(!strcasecmp(Word[0], "url")) {
       URLOpen(WordEol[1]);
       return ER_HANDLED;
     } else {
@@ -329,7 +306,8 @@ int NativeCommand(const char *Command, const char *Args, const char *Context) {
     if(Addon)
       UnloadAddon(Addon, &FirstAddon, 1);
     return ER_HANDLED;
-  } else if(!strcasecmp(Command, "gui")) {
+  }
+  if(!strcasecmp(Command, "gui")) {
     MainThreadRequest(MTR_GUI_COMMAND, strdup(Context), strdup(WordEol[0]));
     return ER_HANDLED;
   }
@@ -375,7 +353,7 @@ int RunEventThread(void *Data) {
           EventContext[-1] = 0;
           EventInfo = strchr(EventContext, '\xff')+1;
           EventInfo[-1] = 0;
-      
+
           StartEvent(TypeName, EventInfo, EventContext, (*Command=='C')?FirstCommand:FirstEventType, 0);
         } else if(Command[0]=='S') { // socket event
           int SockId = strtol(Command+1, NULL, 10);
@@ -385,6 +363,11 @@ int RunEventThread(void *Data) {
             DoSockEvent(Sock, Event, strchr(Command, ':')+1);
           else
             Sock->Function.Native(Sock->Id, Event, strchr(Command, ':')+1);
+        } else if(Command[0]=='F') { // set focus
+          char *FF = strchr(Command+1, '\xff');
+          if(FF)
+            *FF = 0;
+          CurrentTab = FindTabById(strtol(Command+1, NULL, 10));
         } else
           SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Unrecognized queue command");
         free(Command);

@@ -31,6 +31,29 @@ ClientConnection *ConnectionForTab(ClientTab *Tab);
 extern cJSON *PluginPref;
 
 void *Spark_FindSymbol(const char *SymbolName) {
+  struct {
+    const char *Name;
+    void *Pointer;
+  } Table[] = {
+    {"FirstTab",       &FirstTab},
+    {"FirstAddon",     &FirstAddon},
+    {"FirstEventType", &FirstEventType},
+    {"FirstCommand",   &FirstCommand},
+    {"FirstHelp",      &FirstHelp},
+    {"MenuMain",       &MenuMain},
+    {"MenuChannel",    &MenuChannel},
+    {"MenuUser",       &MenuUser},
+    {"MenuUserTab",    &MenuUserTab},
+    {"MenuTextEdit",   &MenuTextEdit},
+    {"MainConfig",     &MainConfig},
+    {"ContextForTab",  ContextForTab},
+    {"FindTab",        FindTab},
+    {"FindTabById",    FindTabById},
+    {NULL}
+  };
+  for(int i=0;Table[i].Name;i++)
+    if(!strcmp(Table[i].Name, SymbolName))
+      return Table[i].Pointer;
   return NULL;
 }
 
@@ -390,7 +413,7 @@ const char * const *xchat_list_fields(xchat_plugin *ph, const char *name) {
   static const char * const channels_fields[] = {
     "schannel",	"schannelkey", "schantypes", "pcontext", "iflags", "iid", "imaxmodes",
     "snetwork", "snickmodes", "snickprefixes", "sserver", "itype", "iusers", "itabflags",
-    "sicon", NULL
+    "sicon", "pguidata1", "pguidata2", "pguidata3", "pguidata4", NULL
   };
   static const char * const users_fields[] = {
     "saccount", "iaway", "shost", "tlasttalk", "snick", "sprefix", "srealname", "iselected", NULL
@@ -445,6 +468,44 @@ int xchat_list_next(xchat_plugin *ph, xchat_list *xlist) {
       return 1;
   }
   return 0;
+}
+
+int Spark_SetListStr(xchat_plugin *ph, xchat_list *xlist, const char *name, const char *newvalue) {
+  return 1;
+}
+
+int Spark_SetListInt(xchat_plugin *ph, xchat_list *xlist, const char *name, int newvalue) {
+  return 1;
+}
+
+void *Spark_ListPtr(xchat_plugin *ph, xchat_list *xlist, const char *name) {
+  switch(xlist->Type) {
+    case LIST_CHANNELS:
+      if(!strcasecmp(name, "guidata1"))
+        return xlist->State.Tab->GUIData[0];
+      else if(!strcasecmp(name, "guidata2"))
+        return xlist->State.Tab->GUIData[1];
+      else if(!strcasecmp(name, "guidata3"))
+        return xlist->State.Tab->GUIData[2];
+      else if(!strcasecmp(name, "guidata4"))
+        return xlist->State.Tab->GUIData[3];
+  }
+  return NULL; // to do: return 1 if successful
+}
+
+int Spark_SetListPtr(xchat_plugin *ph, xchat_list *xlist, const char *name, void *newvalue) {
+  switch(xlist->Type) {
+    case LIST_CHANNELS:
+      if(!strcasecmp(name, "guidata1"))
+        xlist->State.Tab->GUIData[0] = newvalue;
+      else if(!strcasecmp(name, "guidata2"))
+        xlist->State.Tab->GUIData[1] = newvalue;
+      else if(!strcasecmp(name, "guidata3"))
+        xlist->State.Tab->GUIData[2] = newvalue;
+      else if(!strcasecmp(name, "guidata4"))
+        xlist->State.Tab->GUIData[3] = newvalue;
+  }
+  return 1; // to do: return 1 if successful
 }
 
 const char *xchat_list_str(xchat_plugin *ph, xchat_list *xlist, const char *name) {
@@ -525,6 +586,8 @@ int xchat_list_int(xchat_plugin *ph, xchat_list *xlist, const char *name) {
           return Tab->Flags;
       else if(!strcmp(name, "id")) {
         if(Tab->Parent) return Tab->Parent->Id;
+        return Tab->Id;
+      } else if(!strcmp(name, "uid")) {
         return Tab->Id;
       } else if(!strcmp(name, "type")) {
         if(Tab->Flags & TAB_SERVER) return 1;
@@ -811,6 +874,39 @@ int Spark_ListSkipTo(xchat_plugin *ph, xchat_list *List, const char *SkipTo) {
   return 0;
 }
 
+void Spark_LockResource(int Resource) {
+  if(Resource == 0)
+    SDL_LockMutex(LockTabs);
+}
+
+void Spark_UnlockResource(int Resource) {
+  if(Resource == 0)
+    SDL_UnlockMutex(LockTabs);
+}
+
+void Spark_PollGUIMessages(int (*Callback)(int Code, char *Data1, char *Data2)) {
+//  SDL_LockMutex(LockMTR);
+  SDL_Event e;
+  while(SDL_PollEvent(&e) != 0) {
+    if(e.type == SDL_QUIT)
+      quit = 1;
+    else if (e.type == MainThreadEvent) {
+      int Return = Callback(e.user.code, e.user.data1, e.user.data2);
+      if(Return == -1) continue;
+      if(!(Return & MTR_SAVE1) && e.user.data1) free(e.user.data1);
+      if(!(Return & MTR_SAVE2) && e.user.data2) free(e.user.data2);
+    }
+  }
+//  SDL_UnlockMutex(LockMTR);
+}
+
+void Spark_DebugPrintf(const char *format, ...) {
+  va_list vl;
+  va_start(vl, format);
+  SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO, format, vl);
+  va_end(vl);
+}
+
 sparkles_plugin BaseSparklesPlugin = {
   (void*)Sq_RegisterFunc,
   Spark_FindSymbol,
@@ -843,10 +939,19 @@ sparkles_plugin BaseSparklesPlugin = {
   Spark_CurlGet,
   Spark_CurlPost,
   Spark_ListSkipTo,
-  strdup,
   Spark_NetOpen,
   Spark_NetSend,
   Spark_NetClose,
+  Spark_LockResource,
+  Spark_UnlockResource,
+  Spark_PollGUIMessages,
+  QueueEvent,
+  Spark_SetListStr,
+  Spark_SetListInt,
+  Spark_ListPtr,
+  Spark_SetListPtr,
+  SDL_Delay,
+  Spark_DebugPrintf,
 };
 
 xchat_plugin BaseXChatPlugin = {

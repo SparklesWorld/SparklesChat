@@ -1,6 +1,6 @@
 {
   "Client": {
-    "GUI": "SDL",
+    "GUI": "gtk",
     "Autoload": ["data/protocol/.nut", "~addons/.nut", "data/addons/.nut"]
   },
 
@@ -89,7 +89,7 @@
         "Secure": 6697
       },
       "Cinos": {
-        "Host": "irc.cinos.biz",
+        "Host": "irc.cinos.pw",
         "CoolChans": "#chat",
         "Secure": 6697
       },

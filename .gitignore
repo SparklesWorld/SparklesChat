@@ -2,6 +2,7 @@
 *.dll
 *.so
 *.exe
+*.vapi
 obj/
 plugin/
 sdl2-config

@@ -19,10 +19,11 @@
 #include "chat.h"
 
 int RecurseLevel = 0;
-int GUIType = 0;
+int GUIType = 2; // default to external gui
 int quit = 0;
 int SqCurlRunning = 0;
 char *PrefPath = NULL;
+char *BasePath = NULL;
 CURLM *MultiCurl;
 Uint32 MainThreadEvent;
 IPC_Holder MainToEvent, SocketToEvent, EventToMain, EventToSocket;
@@ -36,7 +37,7 @@ EventType *FirstEventType = NULL;
 EventType *FirstCommand = NULL;
 EventHook *FirstTimer = NULL;
 CommandHelp *FirstHelp = NULL;
-SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets, *LockDialog;
+SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets, *LockDialog, *LockMTR;
 
 const char *GUINames[] = {"SDL", "Text", NULL};
 int (*InitGUI[])(void) = {InitMinimalGUI, InitTextGUI};
@@ -65,6 +66,7 @@ int main( int argc, char* args[] ) {
   LockTabs = SDL_CreateMutex();
   LockEvent = SDL_CreateMutex();
   LockSockets = SDL_CreateMutex();
+  LockMTR = SDL_CreateMutex();
 
   MainConfig = cJSON_Load("config.json");
   if(!MainConfig) {
@@ -73,7 +75,7 @@ int main( int argc, char* args[] ) {
     return 0;
   }
 
-  const char *GUITypeString = GetConfigStr("SDL", "Client/GUI");
+  const char *GUITypeString = GetConfigStr("gtk", "Client/GUI");
   for(int i=0;GUINames[i];i++)
     if(!strcasecmp(GUINames[i],GUITypeString)) {
       GUIType = i;
@@ -92,9 +94,11 @@ int main( int argc, char* args[] ) {
 
   MainThreadEvent = SDL_RegisterEvents(1);
 
-  freopen("CON", "w", stdout);
+  freopen("CON", "w", stdout); // supposed to fix problems with SDL eating stdout/stderr
   freopen("CON", "w", stderr);
+
   PrefPath = SDL_GetPrefPath("Bushytail Software","SparklesChat");
+  BasePath = SDL_GetBasePath();
 
   MenuMain = cJSON_Load("data/menus/mainmenu.json");
   MenuChannel = cJSON_Load("data/menus/channelmenu.json");
@@ -121,14 +125,34 @@ int main( int argc, char* args[] ) {
 	}
   }
 
-  (*InitGUI[GUIType])();
-  while(!quit) {
-    (*RunGUI[GUIType])();
-    SDL_Delay(17);
+  // later all GUIs will be plugins and this will be cleaner
+  if(GUIType == 2) {
+    char *DLLPath = (char*)malloc(260*sizeof(char));
+    sprintf(DLLPath, "%sgui%s.%s", BasePath, GUITypeString, SHARED_OBJ_EXTENSION);
+    ClientAddon *Addon = LoadAddon(DLLPath, &FirstAddon);
+    free(DLLPath);
+    if(!Addon) {
+      SDL_MessageBox(SDL_MESSAGEBOX_ERROR, "Error", NULL, "Addon specified in the config file didn't load or doesn't exist");
+      return 0;
+    }
+    void (*Start)() = SDL_LoadFunction(Addon->CPlugin, "Sparkles_StartGUI");
+    if(!Start) {
+      SDL_MessageBox(SDL_MESSAGEBOX_ERROR, "Error", NULL, "Addon specified in the config file doesn't contain Sparkles_StartGUI()");
+      return 0;
+    }
+    Start();
+  } else if(GUIType < 2) {
+    (*InitGUI[GUIType])();
+    while(!quit) {
+      (*RunGUI[GUIType])();
+      SDL_Delay(17);
+    }
   }
   while(FirstAddon)
     UnloadAddon(FirstAddon, &FirstAddon, 0);
-  (*EndGUI[GUIType])();
+  if(GUIType < 2)
+    (*EndGUI[GUIType])();
+  quit = 1;
   SDL_WaitThread(EventThread, NULL);
   SDL_WaitThread(SocketThread, NULL);
   IPC_Free(&MainToEvent);
@@ -148,11 +172,13 @@ int main( int argc, char* args[] ) {
   SDL_DestroyMutex(LockTabs);
   SDL_DestroyMutex(LockEvent);
   SDL_DestroyMutex(LockSockets);
+  SDL_DestroyMutex(LockMTR);
 
   curl_multi_cleanup(MultiCurl);
   curl_global_cleanup();
   EndSock();
   if(PrefPath) SDL_free(PrefPath);
+  if(BasePath) SDL_free(BasePath);
   SDL_Quit();
   return 0;
 }

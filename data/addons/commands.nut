@@ -82,8 +82,14 @@ function NativeCmd(T, P, C) {
   return EventReturn.NORMAL;
 }
 
+function FocusedTab(T, P, C) {
+  print("tab focus change: "+ P + " to " + C)
+  api.TabRemoveFlags(C, TabFlags.COLOR_MASK);
+}
+
 api.AddCommandHook("echo", EchoCmd, Priority.NORMAL, "Prints text to the window", "");
 api.AddCommandHook("saveall", SaveAllCmd, Priority.NORMAL, "Save all preferences for addons", "");
 api.AddCommandHook("cmdalias", CmdAliasCmd, Priority.NORMAL, "Manage aliases list", "");
 api.AddCommandHook("close", CloseCmd, Priority.LOWEST, null, null);
 api.AddCommandHook("*", NativeCmd, Priority.LOWEST, null, null);
+api.AddEventHook("focus tab", FocusedTab, Priority.LOWEST, 0, 0, 0);

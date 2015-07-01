@@ -43,10 +43,12 @@
 #include <windows.h>
 #include "fnmatch.h"
 #include <io.h>
+#define SHARED_OBJ_EXTENSION "dll"
 #else
 #include <fnmatch.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#define SHARED_OBJ_EXTENSION "so"
 #endif
 #include <curl/curl.h>
 #include "cJSON.h"
@@ -154,6 +156,7 @@ typedef struct ClientAddon { // used for protocols too, and plugins
 
   struct ClientAddon *Prev, *Next;
 } ClientAddon;
+#define ADDON_IS_GUI 1
 
 typedef struct ClientConnection {
   HSQUIRRELVM Script;
@@ -234,9 +237,10 @@ typedef struct ClientTab {
   // use a config item to set steps for it to grow/shrink
   ChannelUser *Users;
 
-  char InputHistory[MESSAGE_SIZE*INPUT_HISTORY_LEN];
+//  char InputHistory[MESSAGE_SIZE*INPUT_HISTORY_LEN];
   char Inputbox[INPUTBOX_SIZE];
-  int UndrawnLines;
+  int UndrawnLines; // number of messages in the buffer since the last time
+  void *GUIData[4]; // storage for pointers GUIs want to keep track of per tab
   struct ClientTab *Parent, *Child, *Prev, *Next;
 } ClientTab;
 
@@ -422,6 +426,7 @@ extern SDL_Cursor *SystemCursors[SYSCURSOR_MAX];
 #define TOKENIZE_MULTI_WORD  1   /* "a b c" is a single word */
 #define TOKENIZE_EMPTY_FIRST 2   /* for XChat compatibility */
 
+FILE *fopen_with_basepath(const char *Path, const char *Modes);
 char *strdup_vprintf(const char* format, va_list ap);
 void strlcpy(char *Destination, const char *Source, int MaxLength);
 int memcasecmp(const char *Text1, const char *Text2, int Length);
@@ -465,6 +470,7 @@ void GUI_SetCursor(int CursorNum);
 int PathIsSafe(const char *Path);
 int MakeDirectory(const char *Path);
 ClientTab *FindTab(const char *Context);
+ClientTab *FindTabById(int Id);
 const char *GetConfigStr(const char *Default, const char *s,...);
 int GetConfigInt(int Default, const char *s,...);
 GUIDialog *FindDialogWithProc(const char *Context, GUIState *InState, GUIState **State, DIALOG_PROC Proc);
@@ -549,7 +555,8 @@ extern int quit;
 extern CURLM *MultiCurl;
 extern int SqCurlRunning;
 extern char *PrefPath;
-extern SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets, *LockDialog;
+extern char *BasePath;
+extern SDL_mutex *LockConfig, *LockTabs, *LockEvent, *LockSockets, *LockDialog, *LockMTR;
 extern IPC_Holder MainToEvent, SocketToEvent, EventToMain, EventToSocket;
 
 #define GUIPOS_INPUTBOX 1
@@ -678,18 +685,13 @@ enum ListTypes {
 extern Uint32 MainThreadEvent;
 enum MainThreadRequests {
   MTR_NOTHING,          //
-  MTR_DIRTY_TABS,       //
+  MTR_DIRTY_TABS_LIST,  // d1 = context or NULL
+  MTR_DIRTY_TABS_ATTR,  // d1 = context or NULL
   MTR_INFO_ADDED,       // d1 = context
-  MTR_EDIT_CUT,         // d1 = context
-  MTR_EDIT_COPY,        // d1 = context
-  MTR_EDIT_DELETE,      // d1 = context
-  MTR_EDIT_PASTE,       // d1 = context
-  MTR_EDIT_SELECT_ALL,  // d1 = context
-  MTR_EDIT_INPUT_TEXT,  // d1 = context, d2 = text
-  MTR_EDIT_INPUT_CHAR,  // d1 = context, d2 = integer
-  MTR_EDIT_SET_TEXT,    // d1 = context, d2 = text
-  MTR_EDIT_APPEND_TEXT, // d1 = context, d2 = text
-  MTR_EDIT_SET_CURSOR,  // d1 = context, d2 = integer
   MTR_GUI_COMMAND,      // d1 = context, d2 = command
 };
+#define MTR_UNIMPLEMENTED -1
+#define MTR_OKAY  0
+#define MTR_SAVE1 1
+#define MTR_SAVE2 2
 #endif

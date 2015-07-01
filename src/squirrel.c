@@ -23,6 +23,7 @@
 extern GUIState *GUIStates[];
 unsigned long CurHookId = 0;
 extern EventHook *FirstTimer;
+ClientTab *CurrentTab;
 
 void Sq_PrintFunc(HSQUIRRELVM v,const SQChar *s,...) {
   va_list vl;
@@ -519,9 +520,10 @@ SQInteger Sq_GetConfigStr(HSQUIRRELVM v) {
 }
 
 ClientTab *GetFocusedTab() {
-  GUIDialog *ChatView = FindDialogWithProc(NULL, NULL, NULL, Widget_ChatView);
-  ClientTab *Tab = (ClientTab*)ChatView->dp;
-  return Tab;
+  return CurrentTab;
+//  GUIDialog *ChatView = FindDialogWithProc(NULL, NULL, NULL, Widget_ChatView);
+//  ClientTab *Tab = (ClientTab*)ChatView->dp;
+//  return Tab;
 }
 
 SQInteger Sq_GetInfo(HSQUIRRELVM v) {
@@ -728,6 +730,24 @@ SQInteger Sq_NativeCommand(HSQUIRRELVM v) {
   return 1;
 }
 
+ClientTab *FindTabById(int Id) {
+  SDL_LockMutex(LockTabs);
+  ClientTab *Tab = FirstTab;
+  if(Tab)
+    while(1) {
+      if(Tab->Id == Id) {
+        SDL_UnlockMutex(LockTabs);
+        return Tab;
+      }
+      if(Tab->Child) Tab = Tab->Child;
+      else if(Tab->Next) Tab = Tab->Next;
+      else if(Tab->Parent) Tab = Tab->Parent->Next; // if NULL, loop terminates
+      else break;
+    }
+  SDL_UnlockMutex(LockTabs);
+  return NULL;
+}
+
 ClientTab *FindTab(const char *Context2) {
 // to do: possibly use a mutex here
   char Context[strlen(Context2)+1];
@@ -786,12 +806,19 @@ char *ContextForTab(ClientTab *Tab, char *Buffer) {
   return Buffer;
 }
 
-void ChannelTabsIsDirty() {
+void ChannelTabsIsDirty() { // the entire tabs list is dirty
+/*
   SDL_LockMutex(LockDialog);
   GUIDialog *ChannelTabs = FindDialogWithProc(NULL, NULL, NULL, Widget_ChannelTabs);
   if(ChannelTabs)
     ChannelTabs->flags |= D_DIRTY;
   SDL_UnlockMutex(LockDialog);
+*/
+  MainThreadRequest(MTR_DIRTY_TABS_LIST, NULL, NULL);
+}
+
+void ChannelTabsIsDirtyAttr(const char *TabName) { // the attributes on the list are dirty, or just one tab's attributes
+  MainThreadRequest(MTR_DIRTY_TABS_ATTR, strdup(TabName), NULL);
 }
 
 int TabIdCounter = 1;
@@ -955,7 +982,7 @@ SQInteger Sq_TabSetFlags(HSQUIRRELVM v) {
   ClientTab *Tab = FindTab(Context);
   if(Tab)
     Tab->Flags = Flags;
-  ChannelTabsIsDirty();
+  ChannelTabsIsDirtyAttr(Context);
   SDL_UnlockMutex(LockTabs);
   return 0;
 }
@@ -992,7 +1019,7 @@ SQInteger Sq_TabSetInfo(HSQUIRRELVM v) {
     Connection->Socket = strtol(NewValue, NULL, 10);
   } else if(!strcasecmp(Info, "Channel")) {
     strlcpy(Tab->Name, NewValue, sizeof(Tab->Name));
-    ChannelTabsIsDirty();
+    ChannelTabsIsDirtyAttr(NULL);
   }
   SDL_UnlockMutex(LockTabs);
   return 0;

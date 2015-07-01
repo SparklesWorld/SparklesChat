@@ -98,6 +98,7 @@ int IsInsideRect(int X1, int Y1, int X2, int Y2, int W, int H) {
 }
 
 void MainThreadRequest(int Code, void *Data1, void *Data2) {
+//  SDL_LockMutex(LockMTR);
   SDL_Event event;
   SDL_zero(event);
   event.type = MainThreadEvent;
@@ -105,6 +106,7 @@ void MainThreadRequest(int Code, void *Data1, void *Data2) {
   event.user.data1 = Data1;
   event.user.data2 = Data2;
   SDL_PushEvent(&event);
+//  SDL_UnlockMutex(LockMTR);
 }
 
 void URLOpen(const char *URL) {
@@ -125,6 +127,12 @@ int MakeDirectory(const char *Path) {
 #else
   return !mkdir(Path, 0700);
 #endif
+}
+
+FILE *fopen_with_basepath(const char *Path, const char *Modes) {
+  char RealPath[strlen(Path)+strlen(BasePath)+1];
+  sprintf(RealPath, "%s%s", Path, BasePath);
+  return fopen(RealPath, Modes);
 }
 
 cJSON *cJSON_Load(const char *Filename) {
