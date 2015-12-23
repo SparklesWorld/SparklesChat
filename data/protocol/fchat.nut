@@ -64,6 +64,38 @@ class Server {
       api.NetSend(this.Socket, SendThis);
     }
   }
+
+  function FindChannelWildcard(P) {
+    foreach(Channel in this.CHA)
+      if(api.WildMatch(Channel.name, P))
+        return Channel.name;
+    foreach(Channel in this.ORS)
+      if(api.WildMatch(Channel.title, P))
+        return Channel.name;
+    return null;
+  }
+
+  function CallAPI(Callback, Name, Form, Extra) {
+    function CallAPIGotTicket(Code, Data, Extra) {
+      if(Code != 0) {
+        print("Error getting ticket");
+        return;
+      }
+      Data = api.DecodeJSON(Data);
+      if(Data["error"] != "") {
+        print("Error: "+Data["error"]);
+        return;
+      }
+      Form.account <- this.Account;
+      Form.ticket <- Data["ticket"];
+      api.CurlPost(Callback, null, API_URL+Name+".php", api.MakeForms(Form));
+    }
+    api.MakeForms({"account":Config["Account"], "password":Config["Password"]});
+
+    local GetTicketForm = api.MakeForms({"account":this.Account, "password":this.Password});
+    api.CurlPost(CallAPIGotTicket, null, "https://www.f-list.net/json/getApiTicket.php", GetTicketForm);
+  }
+
   constructor() {
     Friends = [];
     Bookmarks = [];
@@ -131,27 +163,6 @@ class ChannelStatus {
 
 const API_URL = "http://www.f-list.net/json/api/";
 
-function CallAPI(S, Callback, Name, Form, Extra) {
-  function CallAPIGotTicket(Code, Data, Extra) {
-    if(Code != 0) {
-      print("Error getting ticket");
-      return;
-    }
-    Data = api.DecodeJSON(Data);
-    if(Data["error"] != "") {
-      print("Error: "+Data["error"]);
-      return;
-    }
-    Form.account <- S.Account;
-    Form.ticket <- Data["ticket"];
-    api.CurlPost(Callback, null, API_URL+Name+".php", api.MakeForms(Form));
-  }
-  api.MakeForms({"account":Config["Account"], "password":Config["Password"]});
-
-  local GetTicketForm = api.MakeForms({"account":S.Account, "password":S.Password});
-  api.CurlPost(CallAPIGotTicket, null, "https://www.f-list.net/json/getApiTicket.php", GetTicketForm);
-}
-
 function ConnectGotTicket(Code, Data, Extra) {
   if(Code != 0) {
     print("Error getting the initial ticket");
@@ -177,6 +188,7 @@ function ConnectGotTicket(Code, Data, Extra) {
   NewServer.Character = Character;
   NewServer.Friends = Data["friends"];
   NewServer.Bookmarks = Data["bookmarks"];
+  print(NewServer.Friends.len() + " friends, "+NewServer.Bookmarks.len()+ " bookmarks");
   NewServer.Tab = api.TabCreate("FC."+Character, "", TabFlags.SERVER);
   NewServer.RawTab = api.TabCreate("Raw", NewServer.Tab, 0);
   NewServer.Host = Host;
@@ -522,7 +534,7 @@ function FChat_Socket(Socket, Event, Text) {
       local TheServer = Sockets[Socket];
       TheServer.Connected = false; // wait until IDN to know it's actually connected
       api.TabAddFlags(TheServer.Tab, TabFlags.NOTINCHAN);
-      TheServer.Send("IDN", {"method": "ticket", "account": TheServer.Account, "ticket": TheServer.Ticket, "character":  TheServer.Character, "cname": api.GetInfo("ClientName"), "cversion": AddonInfo.Version+" (on "+api.GetInfo("ClientVersion")+")" });
+      TheServer.Send("IDN", {"method": "ticket", "account": TheServer.Account, "ticket": TheServer.Ticket, "character":  TheServer.Character, "cname": api.GetInfo("ClientName"), "cversion": AddonInfo.Version+" (on "+api.GetInfo("ClientVersion")+")"});
       break;
     case SockEvents.NEW_DATA:
       local TheServer = Sockets[Socket];
@@ -828,15 +840,6 @@ function WhoisCmd(T, P, C) {
   local S = Sockets[api.TabGetInfo(C, "Socket")];
   return EventReturn.HANDLED;
 }
-function FindChannelWildcard(S, P) {
-  foreach(Channel in S.CHA)
-    if(api.WildMatch(Channel.name, P))
-      return Channel.name;
-  foreach(Channel in S.ORS)
-    if(api.WildMatch(Channel.title, P))
-      return Channel.name;
-  return null;
-}
 
 function JoinDelayTimer(S) {
   if(S.JoinQueue.len()) {
@@ -852,7 +855,7 @@ function JoinCmd(T, P, C) {
   if(P.len() > 4 && P.slice(0,4) == "ADH-")
     Channel = P;
   else { // wildcard search
-    local Find = FindChannelWildcard(S, P);
+    local Find = S.FindChannelWildcard(P);
     if(Find)
       Channel = Find;
   }
@@ -960,9 +963,9 @@ function ApiTestCmd(T, P, C) {
   };
   if(1 in P[1]) { // has argument?
     local Params = compilestring("return "+P[1][1])();
-    CallAPI(S, Display, P[0][0], Params, null);
+    S.CallAPI(Display, P[0][0], Params, null);
   } else
-    CallAPI(S, Display, P[0][0], {}, null);
+    S.CallAPI(Display, P[0][0], {}, null);
   return EventReturn.HANDLED;
 }
 api.AddCommandHook("jsonapi",  ApiTestCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
