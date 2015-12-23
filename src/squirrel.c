@@ -47,6 +47,34 @@ ClientConnection *ConnectionForTab(ClientTab *Tab) {
   if(Tab->Parent && Tab->Parent->Connection) return Tab->Parent->Connection;
   return NULL;
 }
+
+SQInteger Sq_ImportLibrary(HSQUIRRELVM v) {
+  const SQChar *Library, *ImportTo;
+  sq_getstring(v, 2, &Library);
+  sq_getstring(v, 3, &ImportTo);
+
+  ClientAddon *Addon = FindAddon(Library, &FirstAddon);
+  if(!Addon || Addon->Script) {
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Can't find");
+    sq_pushbool(v, SQFalse);
+    return 1;
+  }
+
+  sq_pushroottable(v);
+  sq_pushstring(v, ImportTo, -1);
+  sq_newtable(v);
+  sq_newslot(v,-3,SQFalse);
+  sq_pushstring(v, ImportTo, -1);
+  sq_get(v, -2);
+
+  int (*Install)(HSQUIRRELVM) = SDL_LoadFunction(Addon->CPlugin, "Sparkles_ImportLibrary");
+  int Worked = Install(v);
+  sq_pop(v,1); // pop the new table
+
+  sq_pushbool(v, Worked?SQTrue:SQFalse);
+  return 1;
+}
+
 SQInteger Sq_MD5(HSQUIRRELVM v) {
   const SQChar *Input;
   sq_getstring(v, 2, &Input);
@@ -1398,6 +1426,7 @@ HSQUIRRELVM Sq_Open(const char *File) {
   Sq_RegisterFunc(v,   Sq_ConvertBBCode,  "ConvertBBCode", -1, "s");
   Sq_RegisterFunc(v,   Sq_Time,           "Time",           0, "");
   Sq_RegisterFunc(v,   Sq_MD5,            "MD5",            1, "s");
+  Sq_RegisterFunc(v,   Sq_ImportLibrary,  "ImportLibrary",  2, "ss");
   Sq_RegisterFunc(v,   Sq_FindAddon,      "FindAddon",      2, "sb");
   Sq_RegisterFunc(v,   Sq_LoadAddon,      "LoadAddon",      1, "s");
   Sq_RegisterFunc(v,   Sq_ReloadAddon,    "ReloadAddon",    1, "s");
@@ -1430,9 +1459,17 @@ void Sq_Close(HSQUIRRELVM v) {
 }
 
 ClientAddon *FindAddon(const char *Name, ClientAddon **First) {
-  for(ClientAddon *Find = *First; Find; Find=Find->Next)
-    if(!strcasecmp(Name, Find->Name) || !strcasecmp(Name, Find->Path))
+  for(ClientAddon *Find = *First; Find; Find=Find->Next) {
+    // make a version of the filename with just the filename, and without the file extension
+    const char *NameOnly = FilenameOnly(Find->Path);
+    char Name2[strlen(NameOnly)+1];
+    strcpy(Name2, NameOnly);
+    char *Dot = strchr(Name2, '.');
+    if(Dot) *Dot = 0;
+
+    if(!strcasecmp(Name, Find->Name) || !strcasecmp(Name, Find->Path) || !strcasecmp(Name2, Name))
       return Find;
+  }
   return NULL;
 }
 

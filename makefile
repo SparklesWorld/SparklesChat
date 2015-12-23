@@ -1,5 +1,5 @@
 objlist := chat draw gui tui cJSON text squirrel eventcmd fnmatch sock plugin ipc websocket util
-dllobjlist := libvisual
+dllobjlist := libtest
 program_title = chat
 
 CC := gcc
@@ -40,10 +40,13 @@ ifdef LINUX
 	valac --pkg=gtk+-3.0 --library=guigtk pluginsrc/guigtk.vala pluginsrc/guigtk.c -X -fPIC -X -shared -o guigtk.so
 	rm guigtk.vapi
 else
-#  $(dlldir)/%.o: $(dllsrcdir)/%.c
+#$(dlldir)/%.o: $(dllsrcdir)/%.c
 #	$(CC) $(CFLAGS) -c -o $@ $< -std=gnu99
-#  $(dlldir)/%.dll: $(dlldir)/%.o
+#$(dlldir)/%.dll: $(dlldir)/%.o
 #	$(CC) -o $@ -s -shared $< -Wl,--subsystem,windows
+  libtest.dll: pluginsrc/libtest.c
+	gcc -c -o obj/libtest.o pluginsrc/libtest.c -std=gnu99
+	g++ -o data/libraries/libtest.dll -s -shared obj/libtest.o -Wl,--subsystem,windows
 
 #  guisdl.dll:
 #  guicurses.dll:

@@ -1,7 +1,7 @@
 {
   "Client": {
     "GUI": "gtk",
-    "Autoload": ["data/protocol/.nut", "~addons/.nut", "data/addons/.nut"]
+    "Autoload": ["data/libraries/.dll", "data/protocol/.nut", "~addons/.nut", "data/addons/.nut"]
   },
 
   "General": {

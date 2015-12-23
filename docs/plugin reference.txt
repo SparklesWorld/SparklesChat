@@ -21,12 +21,11 @@ Called when the client is ready to start the GUI.
 This function should contain the GUI's main loop and only terminate when the GUI is ready to close.
 
 ---- Library interface ----
-In Squirrel, api.RequireCLibrary(LibraryFile, InstallHere)
+In Squirrel, api.ImportLibrary(LibraryFile, InstallHere)
 Will open LibraryFile (and append a .so or .dll to the name as needed) and create a table named InstallHere to install functions in.
+Currently, the library has to be loaded already by the time this function is called.
 
-Upon being loaded, Sparkles_InitPlugin() will be called in the plugin as normal.
-
-int Spark_InstallLibrary(HSQUIRRELVM v)
+int Spark_ImportLibrary(HSQUIRRELVM v)
 Called when a script wants to install a library's API functions.
 Use Spark_RegisterFunc() and see below in the plugin interface section.
 The table is already open by the time this function is called.

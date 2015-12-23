@@ -884,6 +884,10 @@ void Spark_UnlockResource(int Resource) {
     SDL_UnlockMutex(LockTabs);
 }
 
+void Spark_Delay(unsigned long int Delay) {
+  SDL_Delay(Delay);
+}
+
 void Spark_PollGUIMessages(int (*Callback)(int Code, char *Data1, char *Data2)) {
 //  SDL_LockMutex(LockMTR);
   SDL_Event e;
@@ -950,8 +954,19 @@ sparkles_plugin BaseSparklesPlugin = {
   Spark_SetListInt,
   Spark_ListPtr,
   Spark_SetListPtr,
-  SDL_Delay,
+  Spark_Delay,
   Spark_DebugPrintf,
+  sq_pushstring,
+  sq_pushfloat,
+  sq_pushinteger,
+  sq_pushbool,
+  sq_pushnull,
+  sq_getstring,
+  sq_getfloat,
+  sq_getinteger,
+  sq_getbool,
+  sq_gettop,
+  sq_settop,
 };
 
 xchat_plugin BaseXChatPlugin = {

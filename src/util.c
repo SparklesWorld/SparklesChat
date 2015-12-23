@@ -54,6 +54,14 @@ void AutoloadAddon(const char *Filename) {
 }
 
 void AutoloadDirectory(const char *Directory, const char *Filetype, void (*Handler)(const char *Path)) {
+// Correct the file extension for the OS
+#ifdef _WIN32
+  if(!strcmp(Filetype, "so"))
+    Filetype = "dll";
+#else
+  if(!strcmp(Filetype, "dll"))
+    Filetype = "so";
+#endif
   DIR *dir;
   struct dirent *ent;
   char Path[260];
