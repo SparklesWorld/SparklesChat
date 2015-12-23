@@ -384,14 +384,6 @@ void TextInterpolate(char *Out, const char *In, char Prefix, const char *Replace
   *Out = 0;
 }
 
-char *FindCloserPointer(char *A, char *B) {
-  if(!A) // doesn't matter if B is NULL too, it'll just return the NULL
-    return B;
-  if(!B || A < B)
-    return A;
-  return B;
-}
-
 int WildMatch(const char *TestMe, const char *Wild) {
   char NewWild[strlen(Wild)+1];
   char NewTest[strlen(TestMe)+1];

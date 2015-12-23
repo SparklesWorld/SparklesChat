@@ -18,6 +18,14 @@
  */
 #include "chat.h"
 
+char *FindCloserPointer(char *A, char *B) {
+  if(!A) // doesn't matter if B is NULL too, it'll just return the NULL
+    return B;
+  if(!B || A < B)
+    return A;
+  return B;
+}
+
 int CreateDirectoriesForPath(const char *Folders) {
   char Temp[strlen(Folders)+1];
   strcpy(Temp, Folders);

@@ -18,6 +18,7 @@
  */
 #ifndef SPARKLES_HEADER
 #define SPARKLES_HEADER
+#define NO_STDIO_REDIRECT
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
