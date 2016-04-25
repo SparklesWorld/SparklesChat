@@ -110,7 +110,7 @@ function MeCmd(T, P, C) {
   api.Event("you action", EParams, C);
 
   local Channel = api.TabGetInfo(C, "Channel");
-  S.Send("privmsg "+Channel+" :\x0001ACTION "+P+"\x0001");
+  S.Send("privmsg "+Channel+" :\x01ACTION "+P+"\x01");
   return EventReturn.HANDLED;
 }
 function MsgCmd(T, P, C) {
@@ -313,7 +313,7 @@ function IRC_Socket(Socket, Event, Text) {
             else
               C = api.MakeContext(Tab, Nick);
           }
-          if((Text.len() >= 8) && (Text.slice(0, 7) == "\x0001ACTION")) {
+          if((Text.len() >= 8) && (Text.slice(0, 7) == "\x01ACTION")) {
             Text = Text.slice(8, -1);
             local EParams = {"Nick":HostParts[0], "Host":HostParts[1]+"@"+HostParts[2], "Text":Text};
             api.Event("user action", EParams, C);

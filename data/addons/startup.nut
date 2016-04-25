@@ -11,14 +11,14 @@ function DisplayStartup() {
   local Quotes = ["Squirrel powered!", "Cross platform!", "Modular design!", "Huge backlogs!", "Powerful scripting system!", "Flexible notification system!", "Supports XChat/HexChat plugins!", "The client for nerds!", "The client for power users!"];
   if(api.GetConfigStr("Client/GUI", "") != "Text") {
     // the coolest banner
-    api.AddMessage("\x000309▄▀▀▄ █▀▀▄ ▄▀▀▄ █▀▀▄ █  █ █    █▀▀▀ ▄▀▀▄", "Startup", 0, 0);
-    api.AddMessage("\x000309▀▄   █▄▄▀ █▄▄█ █▄▄▀ █▄▀  █    █▄▄▄ ▀▄  ", "Startup", 0, 0);
-    api.AddMessage("\x000309  ▀▄ █    █  █ █ ▀▄ █ ▀▄ █    █      ▀▄", "Startup", 0, 0);
-    api.AddMessage("\x000309▀▄▄▀ █    █  █ █  █ █  █ █▄▄▄ █▄▄▄ ▀▄▄▀ "+api.GetInfo("ClientVersion"), "Startup", 0, 0);
-    api.AddMessage("\x000302"+Quotes[rand()%Quotes.len()], "Startup", 0, 0);
+    api.AddMessage("\x0309▄▀▀▄ █▀▀▄ ▄▀▀▄ █▀▀▄ █  █ █    █▀▀▀ ▄▀▀▄", "Startup", 0, 0);
+    api.AddMessage("\x0309▀▄   █▄▄▀ █▄▄█ █▄▄▀ █▄▀  █    █▄▄▄ ▀▄  ", "Startup", 0, 0);
+    api.AddMessage("\x0309  ▀▄ █    █  █ █ ▀▄ █ ▀▄ █    █      ▀▄", "Startup", 0, 0);
+    api.AddMessage("\x0309▀▄▄▀ █    █  █ █  █ █  █ █▄▄▄ █▄▄▄ ▀▄▄▀ "+api.GetInfo("ClientVersion"), "Startup", 0, 0);
+    api.AddMessage("\x0302"+Quotes[rand()%Quotes.len()], "Startup", 0, 0);
   } else {
-    api.AddMessage("\x000309\x0002Sparkles\x0002 "+api.GetInfo("ClientVersion"), "Startup", 0, 0);
-    api.AddMessage("\x000302\x001d"+Quotes[rand()%Quotes.len()], "Startup", 0, 0);
+    api.AddMessage("\x0309\x02Sparkles\x02 "+api.GetInfo("ClientVersion"), "Startup", 0, 0);
+    api.AddMessage("\x0302\x1d"+Quotes[rand()%Quotes.len()], "Startup", 0, 0);
   }
   api.AddMessage("", "Startup", 0, 0);
 
@@ -29,7 +29,7 @@ function DisplayStartup() {
       if(Server.tolower() == "default") continue;
       local Search = "Networks/"+Protocol+"/"+Server+"/";
 
-      api.AddMessage(Protocol+"\t\x0002"+format("%-16s",Server)+"\x000f - "+api.GetConfigStr(Search+"Host", "no host"),"Startup", 0, 0);
+      api.AddMessage(Protocol+"\t\x02"+format("%-16s",Server)+"\x0f - "+api.GetConfigStr(Search+"Host", "no host"),"Startup", 0, 0);
       local ActionRow = "Connect: ";
       if(api.GetConfigInt(Search+"Secure", 0))
         ActionRow += api.Button("SSL/TLS", "sslconnect "+Server)+", ";

@@ -78,7 +78,7 @@ enum SockEvents {
 };
 
 api.FFEscape <- function (Code) {
-  return "\x00ff"+api.Chr(Code);
+  return "\xff"+api.Chr(Code);
 };
 api.ToJSON <- function (Table) {
   if(typeof(Table)!="array" && typeof(Table)!="table")
@@ -162,7 +162,7 @@ api.ForceMinStrLen <- function (String, Length) {
   return format("%"+(-Length)+"s",String);
 }
 api.Button <- function (Text, Action) { // todo: make friendlier
-  return "\x1f\x000302"+api.FFEscape(FF_Escapes.COMMAND_LINK)+Action+"\xfe"+Text+api.FFEscape(FF_Escapes.COMMAND_LINK)+"\x000f";
+  return "\x1f\x0302"+api.FFEscape(FF_Escapes.COMMAND_LINK)+Action+"\xfe"+Text+api.FFEscape(FF_Escapes.COMMAND_LINK)+"\x0f";
 }
 api.MakeForms <- function (Forms) {
   local Out = "";

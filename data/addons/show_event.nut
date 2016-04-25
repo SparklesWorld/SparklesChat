@@ -42,7 +42,7 @@ function ColorizeNick(Nick) {
   local light = 0.3 + (abs(hash4&max).tofloat()/(max)*0.05);
   local hue = (hash&max).tofloat()/max;
   local rgb = HSL2RGB(hue, sat, light);
-  return format("\x0004%.2x%.2x%.2x%s\x000f", rgb[0], rgb[1], rgb[2], Nick);
+  return format("\x04%.2x%.2x%.2x%s\x0f", rgb[0], rgb[1], rgb[2], Nick);
 }
 
 function IsActionMy(Text) {

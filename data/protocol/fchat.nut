@@ -668,6 +668,7 @@ function CloseCmd(T, P, C) {
 function AdCmd(T, P, C) {
   if(FailIfNotChannel(T, C)) return EventReturn.HANDLED;
   local S = Sockets[api.TabGetInfo(C, "Socket")];
+  S.Send("LRP", {"channel":IdForChannelName(S, api.TabGetInfo(C, "channel")), "message":P});
   return EventReturn.HANDLED;
 }
 function StatusCmd(T, P, C) {
@@ -895,12 +896,12 @@ function ListCmd(T, P, C) {
 
   if(P == "") P = "*";
 
-  api.AddMessage("\x0002Public:", C, 0, 0);
+  api.AddMessage("\x02Public:", C, 0, 0);
   foreach(Channel in S.CHA)
     if(api.WildMatch(Channel.name, P))
       api.AddMessage(api.Button("Join", "join "+Channel.name)+format(" %3i ", Channel.characters)+Channel.name, C, 0, 0);
 
-  api.AddMessage("\x0002Private:", C, 0, 0);
+  api.AddMessage("\x02Private:", C, 0, 0);
   foreach(Channel in S.ORS)
     if(api.WildMatch(Channel.title, P))
       api.AddMessage(api.Button("Join", "join "+Channel.name)+format(" %3i ", Channel.characters)+Channel.title, C, 0, 0);
