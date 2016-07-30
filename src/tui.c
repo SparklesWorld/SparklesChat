@@ -141,6 +141,8 @@ int TUI_StaticText(int msg,struct GUIDialog *d, GUIState *s) {
   return D_O_K;
 }
 int TUI_PopupMenu(int msg,struct GUIDialog *d, GUIState *s) {
+  return D_O_K;
+/*
   WINDOW *Window = TUI_GetWindow(msg, d);
   if(msg == MSG_START || msg == MSG_DRAW) {
     werase(Window);
@@ -148,6 +150,7 @@ int TUI_PopupMenu(int msg,struct GUIDialog *d, GUIState *s) {
     wrefresh(Window);
   }
   return D_O_K;
+*/
 }
 typedef struct TUIChatViewState {
   int Scroll;
@@ -830,9 +833,10 @@ void RunTextGUI() {
   int k = getch();
   MainGUI.MessageKey.Curses = k;
   if(k != ERR) {
-    if(k==KEY_RESIZE)
+    if(k==KEY_RESIZE) {
       resize_term(0, 0);
-    else if(k == KeyConfig[UKEY_EXIT_CLIENT])
+      GUIStates[0]->Flags |= GSF_NEED_REDRAW;
+    } else if(k == KeyConfig[UKEY_EXIT_CLIENT])
       quit = 1;
     else if(k==KEY_MOUSE) {
       MEVENT event;

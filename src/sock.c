@@ -35,6 +35,7 @@ SSL_CTX *SSLContext;
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #endif
 
 SqSocket *FirstSock = NULL;
@@ -83,6 +84,13 @@ int SockSend(SqSocket *Sock, const char *Send, int Length) {
 }
 
 int SockRecv(SqSocket *Sock, char *Buffer, int Length) {
+  #ifndef _WIN32
+    int count;
+    ioctl(Sock->Socket, FIONREAD, &count);
+    if(!count)
+      return 0;
+  #endif
+
   int Return;
   if(Sock->Secure) {
     Return = SSL_read(Sock->Secure, Buffer, Length);
