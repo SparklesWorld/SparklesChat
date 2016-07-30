@@ -206,7 +206,7 @@ function CloseCmd(T, P, C) {
 api.AddCommandHook("say",   SayCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("me",    MeCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("msg",   MsgCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
-api.AddCommandHook("msg",   NoticeCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
+api.AddCommandHook("notice",NoticeCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("join",  JoinCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("part",  PartCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("quit",  QuitCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
@@ -216,6 +216,7 @@ api.AddCommandHook("whois", WhoisCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("nick",  NickCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("reconnect",  ReconnectCmd, Priority.NORMAL|PROTOCOL_CMD, null, null);
 api.AddCommandHook("close",  CloseCmd, Priority.HIGH|PROTOCOL_CMD, null, null);
+api.AddCommandHook("close",  QuitCmd, Priority.HIGH|PROTOCOL_CMD, null, null);
 
 function ReconnectTimer(S) {
   if(S.Connected || S.Connecting)

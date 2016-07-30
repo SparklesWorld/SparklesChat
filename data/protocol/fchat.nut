@@ -76,7 +76,7 @@ class Server {
   }
 
   function CallAPI(Callback, Name, Form, Extra) {
-    function CallAPIGotTicket(Code, Data, Extra) {
+    function CallAPIGotTicket(Code, Data, Extra2) {
       if(Code != 0) {
         print("Error getting ticket");
         return;
@@ -90,7 +90,6 @@ class Server {
       Form.ticket <- Data["ticket"];
       api.CurlPost(Callback, null, API_URL+Name+".php", api.MakeForms(Form));
     }
-    api.MakeForms({"account":Config["Account"], "password":Config["Password"]});
 
     local GetTicketForm = api.MakeForms({"account":this.Account, "password":this.Password});
     api.CurlPost(CallAPIGotTicket, null, "https://www.f-list.net/json/getApiTicket.php", GetTicketForm);
