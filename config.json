@@ -1,6 +1,6 @@
 {
   "Client": {
-    "GUI": "gtk",
+    "GUI": "GTK",
     "Autoload": ["data/libraries/.dll", "data/protocol/.nut", "~addons/.nut", "data/addons/.nut"]
   },
 
@@ -39,6 +39,12 @@
   },
 
   "Networks": {
+    "Telnet": {
+      "SpinDizzy": {
+        "Host": "muck.spindizzy.org:7072",
+        "Secure": 7073
+      }
+    },
     "FChat": {
       "Defaults": {
         "JoinQueueTime": 200,
@@ -71,7 +77,6 @@
       },
       "AnthroChat": {
         "Host": "irc.anthrochat.net",
-        "CoolChans": "#novaforest,#freedom",
         "Secure": 6697
       },
       "IRCFox": {
@@ -80,22 +85,18 @@
       },
       "CaffieNET": {
         "Host": "irc.caffie.net",
-        "CoolChans": "#smwc,#radbusiness",
         "Secure": 6697
       },
       "ElectroCode": {
         "Host": "irc.novasquirrel.com",
-        "CoolChans": "#chat",
         "Secure": 6697
       },
       "Cinos": {
         "Host": "irc.cinos.pw",
-        "CoolChans": "#chat",
         "Secure": 6697
       },
       "Xertion": {
         "Host": "irc.xertion.org",
-        "CoolChans": "#lobby",
         "Secure": 6697
       }
     }
