@@ -180,6 +180,48 @@ SQInteger Sq_TextFileExists(HSQUIRRELVM v) {
   return 1;
 }
 
+SQInteger Sq_WildExtract(HSQUIRRELVM v) {
+  const SQChar *Str1, *Str2;
+  sq_getstring(v, 2, &Str1);
+  sq_getstring(v, 3, &Str2);
+  char Text[strlen(Str1)+1];
+  char Mask[strlen(Str2)+1];
+  strcpy(Text, Str1);
+  strcpy(Mask, Str2);
+
+  // Make an array to store the extracted strings
+  sq_newarray(v, 0);
+
+  char *End = Text+strlen(Text);
+  char *Ptr = strtok(Mask, "*");
+  char *Search = Text;
+  while(Ptr != NULL) {
+    int Len = strlen(Ptr);
+    // clear out the thing from the mask
+    Search = strstr(Search, Ptr);
+    if(!Search)
+      break;
+    memset(Search, 0, Len);
+    Search += Len;
+
+    // find the next thing in the mask
+    Ptr = strtok(NULL, "*");
+  }
+
+  int Ready = 1;
+  for(Ptr = Text; Ptr != End; Ptr++) {
+     if(!*Ptr)
+       Ready = 1;
+     if(*Ptr && Ready) {
+       sq_pushstring(v, Ptr, -1);
+       sq_arrayappend(v, -2);
+       Ready = 0;
+     }
+  }
+
+  return 1;
+}
+
 void ParamSplit(HSQUIRRELVM v, int Style) {
   const SQChar *Str;
   sq_getstring(v, 2, &Str);
@@ -1396,6 +1438,7 @@ HSQUIRRELVM Sq_Open(const char *File) {
   Sq_RegisterFunc(v,   Sq_StrToL,         "Num",            2, "si");
   Sq_RegisterFunc(v,   Sq_AsciiChr,       "Chr",            1, "i");
   Sq_RegisterFunc(v,   Sq_WildMatch,      "WildMatch",      2, "ss");
+  Sq_RegisterFunc(v,   Sq_WildExtract,    "WildExtract",    2, "ss");
   Sq_RegisterFunc(v,   Sq_SetClipboard,   "SetClipboard",   1, "s");
   Sq_RegisterFunc(v,   Sq_GetClipboard,   "GetClipboard",   0, "");
   Sq_RegisterFunc(v,   Sq_AddTimer,       "AddTimer",       3, "ic.");

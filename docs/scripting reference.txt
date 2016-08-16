@@ -7,6 +7,10 @@ Returns a string containing a single byte, indicated by Code.
 api.WildMatch(String, Wildcard)
 Returns true if String matches Wildcard, case insensitive. ? and * are usable.
 
+api.WildExtract(String, Wildcard)
+Takes the same arguments as api.WildMatch, but returns an array containing what each * matched.
+Only supports *, not ?.
+
 api.SetClipboard(String)
 Sets the clipboard to String.
 
