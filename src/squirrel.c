@@ -114,6 +114,7 @@ char *Spark_LoadTextFile(const char *File) {
     fclose(TextFile);
     return NULL;
   }
+  Buffer[FileSize] = 0;
   fclose(TextFile);
   return Buffer;
 }

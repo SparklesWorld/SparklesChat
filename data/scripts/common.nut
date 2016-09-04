@@ -169,7 +169,7 @@ api.MakeForms <- function (Forms) {
   foreach(key,value in Forms) {
     if(Out!="")
       Out += "&";
-    Out += key+"="+api.URLEncode(""+value);
+    Out += key+"="+api.URLEncode(value.tostring());
   }
   return Out;
 }

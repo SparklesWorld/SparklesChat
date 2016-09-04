@@ -91,7 +91,7 @@ class Server {
       api.CurlPost(Callback, null, API_URL+Name+".php", api.MakeForms(Form));
     }
 
-    local GetTicketForm = api.MakeForms({"account":this.Account, "password":this.Password});
+    local GetTicketForm = api.MakeForms({"account":this.Account, "password":this.Password, "no_characters":true, "no_friends":true, "no_bookmarks":true});
     api.CurlPost(CallAPIGotTicket, null, "https://www.f-list.net/json/getApiTicket.php", GetTicketForm);
   }
 
